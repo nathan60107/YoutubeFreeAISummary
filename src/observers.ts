@@ -1,9 +1,8 @@
 import { SelectorListenerOptions, SelectorObserver, type SelectorObserverConstructorOptions } from "@sv443-network/userutils";
+import { error } from "./utils";
 
 export type ObserverName =
   | "body";
-//| "foo"
-//| "bar";
 
 /** Options that are applied to every SelectorObserver instance */
 const defaultObserverOptions: SelectorObserverConstructorOptions = {
@@ -26,20 +25,9 @@ export function initObservers() {
     });
 
     globservers.body.enable();
-
-    //#region foo
-    // -> some other subdivision of the <body> element - the selector can't start higher or on the same level as `body`!
-    // const fooSelector = "#foo";
-    // globservers.foo = new SelectorObserver(fooSelector, {
-    //   ...defaultObserverOptions,
-    // });
-
-    // globservers.body.addListener(fooSelector, {
-    //   listener: () => globservers.foo.enable(),
-    // });
   }
   catch(err) {
-    console.error("Failed to initialize observers:", err);
+    error("Failed to initialize observers:", err);
   }
 }
 

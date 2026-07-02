@@ -1,6 +1,17 @@
 import { addGlobalStyle, openInNewTab, randomId, type LooseUnion } from "@sv443-network/userutils";
 import type resources from "../assets/resources.json";
 
+//#region logging
+
+/** Shared console prefix so every log is filterable and never lost behind a missing tag. */
+const logPrefix = "[YFSWG]";
+/** Prefixed `console.log`. */
+export const log = (...args: unknown[]) => console.log(logPrefix, ...args);
+/** Prefixed `console.warn`. */
+export const warn = (...args: unknown[]) => console.warn(logPrefix, ...args);
+/** Prefixed `console.error`. */
+export const error = (...args: unknown[]) => console.error(logPrefix, ...args);
+
 //#region resources
 
 /** Key of a resource in `assets/resources.json` and extra keys defined by `tools/post-build.ts` */
@@ -14,7 +25,7 @@ export type ResourceKey = keyof typeof resources;
 export async function getResourceUrl(name: LooseUnion<ResourceKey>) {
   let url = await GM.getResourceUrl(name);
   if(!url || url.length === 0) {
-    console.warn(`Couldn't get blob URL nor external URL for @resource '${name}', trying to use base64-encoded fallback`);
+    warn(`Couldn't get blob URL nor external URL for @resource '${name}', trying to use base64-encoded fallback`);
     // @ts-ignore
     url = await GM.getResourceUrl(name, false);
   }
@@ -76,6 +87,24 @@ export function onInteraction<TElem extends HTMLElement>(elem: TElem, listener: 
   };
   elem.addEventListener("click", proxListener, listenerOptions);
   elem.addEventListener("keydown", proxListener, listenerOptions);
+}
+
+/** Resolves with the first element matching `selector`, polling until found or `timeoutMs` elapses (then `null`). */
+export function waitForSelector<T extends Element>(selector: string, timeoutMs = 4000, intervalMs = 100): Promise<T | null> {
+  const existing = document.querySelector<T>(selector);
+  if(existing)
+    return Promise.resolve(existing);
+
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      const el = document.querySelector<T>(selector);
+      if(el || Date.now() - start > timeoutMs) {
+        clearInterval(timer);
+        resolve(el);
+      }
+    }, intervalMs);
+  });
 }
 
 /** Removes all child nodes of an element without invoking the slow-ish HTML parser */

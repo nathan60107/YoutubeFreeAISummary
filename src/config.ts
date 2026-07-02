@@ -4,11 +4,27 @@ import type { ScriptConfig } from "./types";
 
 let canCompress: boolean | undefined;
 
+/** Default prompt template - also used by the settings panel's "reset" action. */
+export const defaultPromptTemplate = [
+  "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。",
+  "",
+  "影片標題：{{title}}",
+  "影片連結：{{url}}",
+  "",
+  "{{transcript}}",
+].join("\n");
+
+/** Factory so the defaults object isn't shared by reference. */
+export const getDefaultConfig = (): ScriptConfig => ({
+  promptTemplate: defaultPromptTemplate,
+  includeTimestamps: true,
+  autoSubmit: true,
+  preferredLangs: "",
+});
+
 export const config = new DataStore({
   id: "script-config",
-  defaultData: {
-    // add data here
-  } satisfies ScriptConfig,
+  defaultData: getDefaultConfig() satisfies ScriptConfig,
   // increment this value if the data format changes:
   formatVersion: 1,
   // functions that migrate data from older versions to newer ones:

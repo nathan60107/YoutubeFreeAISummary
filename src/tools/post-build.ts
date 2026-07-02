@@ -116,6 +116,7 @@ const ringBell = Boolean(env.RING_BELL && (env.RING_BELL.length > 0 && env.RING_
 // @grant             GM.getResourceUrl
 // @grant             GM.xmlHttpRequest
 // @grant             GM.openInTab
+// @grant             unsafeWindow
 // @noframes\
 ${resourcesDirectives ? "\n" + resourcesDirectives : ""}\
 ${requireDirectives ? "\n" + requireDirectives : ""}\

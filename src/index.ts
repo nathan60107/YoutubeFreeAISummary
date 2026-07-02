@@ -1,10 +1,17 @@
 import { initConfig } from "./config";
 import { buildNumber, scriptInfo } from "./constants";
+import { installTimedtextInterceptor } from "./intercept";
 import { initObservers } from "./observers";
-import { addStyle, domLoaded } from "./utils";
+import { addStyle, domLoaded, error, log } from "./utils";
+import { initYoutube } from "./youtube";
+import { initAiStudio } from "./aistudio";
 
 /** Runs when the userscript is loaded initially */
 async function init() {
+  // Must run at document-start, before the YouTube player issues its timedtext requests.
+  if(location.hostname.endsWith("youtube.com"))
+    installTimedtextInterceptor();
+
   await initConfig();
 
   if(domLoaded)
@@ -16,15 +23,21 @@ async function init() {
 /** Runs after the DOM is available */
 async function run() {
   try {
-    console.log(`Initializing ${scriptInfo.name} v${scriptInfo.version} (#${buildNumber})...`);
+    log(`Initializing ${scriptInfo.name} v${scriptInfo.version} (#${buildNumber})...`);
 
     // post-build these double quotes are replaced by backticks (because if backticks are used here, the bundler converts them to double quotes)
     addStyle("#{{GLOBAL_STYLE}}", "global");
 
     initObservers();
+
+    // The script matches both YouTube and Google AI Studio - run only the relevant side.
+    if(location.hostname.endsWith("youtube.com"))
+      initYoutube();
+    else if(location.hostname.endsWith("aistudio.google.com"))
+      void initAiStudio();
   }
   catch(err) {
-    console.error("Fatal error:", err);
+    error("Fatal error:", err);
     return;
   }
 }

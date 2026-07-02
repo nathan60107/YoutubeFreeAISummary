@@ -16,6 +16,17 @@ It is built to solve the two problems that other summary scripts run into: subti
 - **Completely free** — No API key and no paid service required; you only need to be logged into Google AI Studio
 - **One click** — Adds a single button to the YouTube player page that captures the subtitles and opens AI Studio for you
 
+## Roadmap
+
+Planned features and fixes:
+
+- **Fix private-window support** — the button can currently fail to appear in some logged-out / private-window contexts
+- **Localization** — multi-language user interface
+- **Better failure feedback** — clearer, more helpful messages when capture or injection fails
+- **Disabled state when unavailable** — grey out the button when the video has no usable subtitles / translation
+- **Summarize outside the watch page** — trigger a summary without opening the full watch page (e.g. from thumbnails or listings)
+- **Browser extension version** — a packaged browser extension in addition to the userscript
+
 ## Installation
 
 > This project is currently under active development. Installation links will be added with the first release.
