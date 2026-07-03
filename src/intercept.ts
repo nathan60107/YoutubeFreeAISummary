@@ -81,12 +81,25 @@ export function installTimedtextInterceptor(): void {
   log("timedtext interceptor installed");
 }
 
+/** True when `url` belongs to `videoId` (or any video when `videoId` is omitted). */
+function matchesVideo(url: string, videoId?: string): boolean {
+  return !videoId || url.includes(`v=${videoId}`);
+}
+
+/**
+ * Returns an already-captured timedtext URL for `videoId` (or the latest one) without waiting,
+ * or `null` if none has been observed yet. Lets callers skip re-triggering the player.
+ */
+export function peekTimedtextUrl(videoId?: string): string | null {
+  return latestUrl && matchesVideo(latestUrl, videoId) ? latestUrl : null;
+}
+
 /**
  * Resolves with a timedtext URL for `videoId` (or the latest one if `videoId` is omitted),
  * waiting up to `timeoutMs` for the player to issue one. Resolves `null` on timeout.
  */
 export function waitForTimedtextUrl(videoId?: string, timeoutMs = 6000): Promise<string | null> {
-  const match = (url: string) => !videoId || url.includes(`v=${videoId}`);
+  const match = (url: string) => matchesVideo(url, videoId);
 
   if(latestUrl && match(latestUrl))
     return Promise.resolve(latestUrl);

@@ -8,7 +8,7 @@ import { reportFailure } from "./feedback";
 import { stashSummaryPayload } from "./handoff";
 import { gearIcon, loadingIcon, sparkleIcon } from "./icons";
 import { openSettings } from "./settings";
-import { getCurrentSubtitles, type SubtitleResult } from "./subtitles";
+import { getCurrentSubtitles, hasCaptionsAvailable, type SubtitleResult } from "./subtitles";
 import { addStyle, error, log, onInteraction, openInTab, waitForSelector, warn } from "./utils";
 
 /** Where to open Google AI Studio for a fresh chat. */
@@ -79,6 +79,44 @@ function addSummaryButton(likeDislike: HTMLElement) {
   onInteraction(gearBtn, () => openSettings());
 
   likeDislike.before(split);
+  void watchCaptionAvailability(mainBtn);
+}
+
+/** Default (enabled) label / tooltip for the summary button. */
+const mainBtnLabel = "用 Gemini 摘要";
+/** Label / tooltip shown while the button is greyed out because the video has no captions. */
+const noCaptionsLabel = "這部影片沒有可用的字幕，無法摘要";
+
+/**
+ * Greys out the summary button until captions are detected for the current video. The player
+ * response can lag behind button insertion, so we poll: enable as soon as a track appears, and
+ * settle on the disabled state only if none shows up within the timeout.
+ */
+async function watchCaptionAvailability(mainBtn: HTMLButtonElement, timeoutMs = 10000, intervalMs = 400) {
+  setAvailable(mainBtn, false);
+  const start = Date.now();
+  while(mainBtn.isConnected && Date.now() - start < timeoutMs) {
+    if(hasCaptionsAvailable()) {
+      setAvailable(mainBtn, true);
+      return;
+    }
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+}
+
+/**
+ * Toggles the summary button between its normal and greyed-out (no-captions) states. The native
+ * `disabled` attribute blocks the click without any JS guard, while the `title` tooltip still
+ * surfaces on hover so the user learns why it is greyed out. `aria-disabled` mirrors the state for
+ * assistive tech.
+ */
+function setAvailable(mainBtn: HTMLButtonElement, available: boolean) {
+  mainBtn.classList.toggle("yfswg-disabled", !available);
+  mainBtn.disabled = !available;
+  mainBtn.setAttribute("aria-disabled", String(!available));
+  const label = available ? mainBtnLabel : noCaptionsLabel;
+  mainBtn.title = label;
+  mainBtn.setAttribute("aria-label", label);
 }
 
 /** Captures the current video's subtitles when the button is pressed. */
@@ -164,6 +202,10 @@ const buttonStyle = `
 .yfswg-main.yfswg-busy {
   opacity: 0.6;
   pointer-events: none;
+}
+.yfswg-main.yfswg-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .yfswg-split .ytSpecButtonShapeNextIcon.yfswg-spin {
   animation: yfswg-spin 0.8s linear infinite;

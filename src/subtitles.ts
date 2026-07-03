@@ -12,7 +12,7 @@
  *  2. DOM scrape of YouTube's own "Show transcript" panel.
  */
 
-import { waitForTimedtextUrl } from "./intercept";
+import { peekTimedtextUrl, waitForTimedtextUrl } from "./intercept";
 import { warn, waitForSelector } from "./utils";
 
 //#region types
@@ -193,7 +193,10 @@ function enablePlayerCaptions(): void {
  * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
  */
 async function fetchViaInterceptedUrl(videoId?: string): Promise<SubtitleSegment[] | null> {
-  enablePlayerCaptions();
+  // If the player already issued a timedtext request we can reuse, don't disturb the user's
+  // caption state; only toggle captions on when we have nothing captured yet.
+  if(!peekTimedtextUrl(videoId))
+    enablePlayerCaptions();
 
   const captured = await waitForTimedtextUrl(videoId, 6000);
   if(!captured) {
@@ -298,6 +301,14 @@ function toTimedText(segments: SubtitleSegment[]): string {
 function defaultPreferredLangs(): string[] {
   const langs = [navigator.language, ...(navigator.languages ?? [])].filter(Boolean);
   return [...new Set([...langs, "en"])];
+}
+
+/**
+ * Whether the currently playing video exposes any caption track. Used to grey out the summary
+ * button up front when there is nothing to summarize.
+ */
+export function hasCaptionsAvailable(): boolean {
+  return getCaptionTracks(getPlayerResponse()).length > 0;
 }
 
 /**
