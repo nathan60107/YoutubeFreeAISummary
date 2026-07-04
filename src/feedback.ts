@@ -8,6 +8,7 @@
  */
 
 import { buildNumber, host, platformNames, repo, scriptInfo } from "./constants";
+import { t } from "./i18n";
 import { openModal } from "./modal";
 import { addStyle, getRecentLogs } from "./utils";
 
@@ -96,35 +97,33 @@ function buildDebugReport(context: string): string {
   ].join("\n");
 }
 
-const defaultMessage = "摘要失敗了。請重新整理頁面後再試一次。";
-
 /** Builds and shows the modal. Only one is shown at a time. */
 function showModal(info: FailureInfo, escalate: boolean): void {
   const report = escalate ? buildDebugReport(info.context) : "";
 
   const handle = openModal({
     id: overlayId,
-    label: "摘要失敗",
+    label: t("feedback.title"),
     role: "alertdialog",
     innerHtml: `
-      <h2 class="yfas-modal-title">摘要失敗</h2>
+      <h2 class="yfas-modal-title">${t("feedback.title")}</h2>
       <p class="yfas-fb-msg"></p>
       ${escalate ? `
         <div class="yfas-fb-debug">
-          <p class="yfas-fb-debug-lead">這個問題似乎連續發生了。若持續無法使用，請協助回報，讓問題更快被修好：</p>
+          <p class="yfas-fb-debug-lead">${t("feedback.debug.lead")}</p>
           <ol class="yfas-fb-steps">
-            <li>點下方「複製診斷資訊」。</li>
-            <li>前往問題回報頁開一個新的 issue。</li>
-            <li>把剛剛複製的內容貼上，並簡述你的操作。</li>
+            <li>${t("feedback.debug.step1")}</li>
+            <li>${t("feedback.debug.step2")}</li>
+            <li>${t("feedback.debug.step3")}</li>
           </ol>
           <textarea class="yfas-fb-report" readonly rows="8"></textarea>
           <div class="yfas-fb-debug-actions">
-            <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="copy">複製診斷資訊</button>
-            <a class="yfas-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">前往問題回報頁 ↗</a>
+            <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="copy">${t("feedback.debug.copy")}</button>
+            <a class="yfas-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">${t("feedback.debug.issue")}</a>
           </div>
         </div>` : ""}
       <div class="yfas-fb-actions">
-        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="close">關閉</button>
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="close">${t("feedback.close")}</button>
       </div>`,
   });
   if(!handle)
@@ -136,7 +135,7 @@ function showModal(info: FailureInfo, escalate: boolean): void {
   const { overlay, close } = handle;
 
   // Assign text via textContent to avoid injecting untrusted strings as HTML.
-  overlay.querySelector<HTMLElement>(".yfas-fb-msg")!.textContent = info.userMessage ?? defaultMessage;
+  overlay.querySelector<HTMLElement>(".yfas-fb-msg")!.textContent = info.userMessage ?? t("feedback.defaultMessage");
   overlay.querySelector("[data-action='close']")!.addEventListener("click", close);
 
   if(escalate) {
@@ -145,8 +144,8 @@ function showModal(info: FailureInfo, escalate: boolean): void {
     const copyBtn = overlay.querySelector<HTMLButtonElement>("[data-action='copy']")!;
     copyBtn.addEventListener("click", async () => {
       const ok = await copyText(report, reportEl);
-      copyBtn.textContent = ok ? "已複製 ✓" : "複製失敗，請手動選取";
-      setTimeout(() => (copyBtn.textContent = "複製診斷資訊"), 2500);
+      copyBtn.textContent = ok ? t("feedback.debug.copied") : t("feedback.debug.copyFailed");
+      setTimeout(() => (copyBtn.textContent = t("feedback.debug.copy")), 2500);
     });
   }
 

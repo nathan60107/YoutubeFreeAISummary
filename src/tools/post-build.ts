@@ -66,6 +66,9 @@ type BuildStats = {
   timestamp: number;
 };
 
+/** Per-locale userscript metadata, keyed by BCP-47 code, from `assets/meta-i18n.json`. */
+type MetaI18n = Record<string, { name?: string; description?: string }>;
+
 const buildTs = Date.now();
 /** Used to force the browser and userscript extension to refresh resources */
 const buildUuid = randomUUID();
@@ -90,13 +93,14 @@ const ringBell = Boolean(env.RING_BELL && (env.RING_BELL.length > 0 && env.RING_
 
   const resourcesDirectives = await getResourceDirectives(buildNbr);
   const requireDirectives = await getRequireDirectives();
+  const { nameDirectives, descriptionDirectives } = await getLocalizedMetaDirectives();
 
   const header = `\
 // ==UserScript==
-// @name              ${pkg.userscriptName}
+// @name              ${pkg.userscriptName}${nameDirectives ? "\n" + nameDirectives : ""}
 // @namespace         ${pkg.homepage}
 // @version           ${pkg.version}
-// @description       ${pkg.description}
+// @description       ${pkg.description}${descriptionDirectives ? "\n" + descriptionDirectives : ""}
 // @homepageURL       ${pkg.homepage}#readme
 // @supportURL        ${pkg.bugs.url}
 // @license           ${pkg.license}
@@ -272,6 +276,32 @@ async function getResourceDirectives(buildNbr: string) {
   }
   catch(err) {
     console.warn("No resource directives found:", err);
+  }
+}
+
+/**
+ * Reads `assets/meta-i18n.json` and returns localized `@name:<code>` / `@description:<code>` header
+ * directives (as two newline-joined blocks). Userscript managers show these when the browser UI
+ * language matches; the base English `@name`/`@description` from package.json stay the default.
+ * Values are padded to the same value column (19) as the hand-written directives above.
+ */
+async function getLocalizedMetaDirectives() {
+  const empty = { nameDirectives: "", descriptionDirectives: "" };
+  try {
+    const meta = JSON.parse(String(await readFile(join(assetFolderPath, "meta-i18n.json")))) as MetaI18n;
+    const nameLines: string[] = [];
+    const descLines: string[] = [];
+    for(const [code, { name, description }] of Object.entries(meta)) {
+      if(name)
+        nameLines.push(`// ${`@name:${code}`.padEnd(19)} ${name}`);
+      if(description)
+        descLines.push(`// ${`@description:${code}`.padEnd(19)} ${description}`);
+    }
+    return { nameDirectives: nameLines.join("\n"), descriptionDirectives: descLines.join("\n") };
+  }
+  catch(err) {
+    console.warn("No localized metadata directives found:", err);
+    return empty;
   }
 }
 

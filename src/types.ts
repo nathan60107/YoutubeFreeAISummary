@@ -10,6 +10,11 @@ export type RollupArgs = Partial<{
 /** Configuration object for the script (persisted via the config DataStore). */
 export type ScriptConfig = {
   /**
+   * Interface language. Either `"auto"` (resolve from the browser's languages) or a supported locale
+   * code (`LangCode` from `i18n.ts`, e.g. `"en"`, `"zh-TW"`). Unknown values fall back to auto.
+   */
+  language: string;
+  /**
    * Which AI provider to hand the transcript off to. One of the {@linkcode AiProvider} ids from
    * `providers.ts` (e.g. `"aistudio"`, `"gemini"`, `"chatgpt"`, `"claude"`, `"grok"`). An unknown
    * id falls back to the default provider at runtime.
@@ -18,6 +23,10 @@ export type ScriptConfig = {
   /**
    * The prompt sent to the chosen AI provider. Supports the tokens `{{title}}`, `{{url}}`,
    * `{{transcript}}`, which are replaced with the video's title, URL, and captured subtitles.
+   *
+   * An empty string means "follow the interface language": the built-in default prompt for the
+   * active locale is used and tracks language changes. Any non-empty value is a user-customized
+   * template kept verbatim.
    */
   promptTemplate: string;
   /** Whether `{{transcript}}` uses timestamped lines (`[h:mm:ss] text`) or plain text. */

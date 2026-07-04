@@ -21,7 +21,6 @@ It is built to solve the two problems that other summary scripts run into: subti
 
 Planned features and fixes:
 
-- **Localization** — multi-language user interface
 - **Summarize outside the watch page** — trigger a summary without opening the full watch page (e.g. from thumbnails or listings)
 - **Browser extension version** — a packaged browser extension in addition to the userscript
 

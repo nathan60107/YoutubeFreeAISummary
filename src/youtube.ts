@@ -6,6 +6,7 @@
 import { config } from "./config";
 import { reportFailure } from "./feedback";
 import { stashSummaryPayload } from "./handoff";
+import { t } from "./i18n";
 import { gearIcon, loadingIcon, sparkleIcon } from "./icons";
 import { getProviderById } from "./providers";
 import { openSettings } from "./settings";
@@ -29,6 +30,27 @@ export function initYoutube() {
   void ensureSummaryButton();
   // The action row is re-rendered on SPA navigation, so re-insert after each navigation.
   window.addEventListener("yt-navigate-finish", () => void ensureSummaryButton());
+  // Re-label the button in place when the user changes the interface language in settings.
+  window.addEventListener("yfas-lang-changed", relabelButton);
+}
+
+/** Re-applies the current interface language to an already-injected button (after a language change). */
+function relabelButton() {
+  const split = document.getElementById(btnId);
+  if(!split)
+    return;
+  const mainBtn = split.querySelector<HTMLButtonElement>(".yfas-main");
+  if(mainBtn) {
+    const textEl = mainBtn.querySelector(".ytSpecButtonShapeNextButtonTextContent");
+    if(textEl)
+      textEl.textContent = t("button.label");
+    setAvailable(mainBtn, !mainBtn.disabled); // re-applies title/aria in the new language for the current state
+  }
+  const gearBtn = split.querySelector<HTMLButtonElement>(".yfas-settings");
+  if(gearBtn) {
+    gearBtn.title = t("button.settings");
+    gearBtn.setAttribute("aria-label", t("button.settings"));
+  }
 }
 
 /**
@@ -65,9 +87,9 @@ function addSummaryButton(likeDislike: HTMLElement) {
   setInnerHtml(split, `
     <button class="yfas-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="${enabledLabel()}" aria-label="${enabledLabel()}">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${sparkleIcon}</div>
-      <div class="ytSpecButtonShapeNextButtonTextContent">摘要</div>
+      <div class="ytSpecButtonShapeNextButtonTextContent">${t("button.label")}</div>
     </button>
-    <button class="yfas-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
+    <button class="yfas-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="${t("button.settings")}" aria-label="${t("button.settings")}">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${gearIcon}</div>
     </button>`);
 
@@ -81,9 +103,9 @@ function addSummaryButton(likeDislike: HTMLElement) {
 }
 
 /** Default (enabled) label / tooltip for the summary button, naming the currently selected provider. */
-const enabledLabel = () => `用 ${getProviderById(config.getData().provider).label} 摘要`;
+const enabledLabel = () => t("button.summarizeWith", getProviderById(config.getData().provider).label);
 /** Label / tooltip shown while the button is greyed out because the video has no captions. */
-const noCaptionsLabel = "這部影片沒有可用的字幕，無法摘要";
+const noCaptionsLabel = () => t("button.noCaptions");
 
 /**
  * Greys out the summary button until captions are detected for the current video. The player
@@ -112,7 +134,7 @@ function setAvailable(mainBtn: HTMLButtonElement, available: boolean) {
   mainBtn.classList.toggle("yfas-disabled", !available);
   mainBtn.disabled = !available;
   mainBtn.setAttribute("aria-disabled", String(!available));
-  const label = available ? enabledLabel() : noCaptionsLabel;
+  const label = available ? enabledLabel() : noCaptionsLabel();
   mainBtn.title = label;
   mainBtn.setAttribute("aria-label", label);
 }
@@ -130,7 +152,7 @@ async function onSummaryClick(btn: HTMLButtonElement) {
       warn("No captions are available for this video.");
       void reportFailure({
         context: "youtube:no-captions",
-        userMessage: "找不到這部影片的字幕／翻譯，無法摘要。請確認影片有字幕，重新整理頁面後再試一次。",
+        userMessage: t("error.noCaptions"),
       });
       return;
     }
@@ -170,7 +192,8 @@ function setBusy(btn: HTMLButtonElement, iconEl: HTMLElement | null, busy: boole
 /** Builds the final prompt by substituting the template tokens with the video's data. */
 function buildPrompt(result: SubtitleResult, template: string, includeTimestamps: boolean): string {
   const transcript = includeTimestamps ? result.timedText : result.text;
-  return template
+  // Empty template = follow the interface language: fall back to the active locale's default prompt.
+  return (template.trim() || t("prompt.default"))
     .split("{{title}}").join(getVideoTitle())
     .split("{{url}}").join(location.href)
     .split("{{transcript}}").join(transcript);

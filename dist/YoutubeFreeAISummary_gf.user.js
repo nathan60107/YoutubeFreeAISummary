@@ -1,14 +1,32 @@
 // ==UserScript==
 // @name              YoutubeFreeAISummary
+// @name:zh-TW         YouTube 免費 AI 摘要
+// @name:zh-CN         YouTube 免费 AI 摘要
+// @name:ja            YouTube 無料 AI 要約
+// @name:ko            YouTube 무료 AI 요약
+// @name:es            Resumen de YouTube con IA gratis
+// @name:fr            Résumé YouTube par IA gratuit
+// @name:de            YouTube-KI-Zusammenfassung (kostenlos)
+// @name:pt-BR         Resumo de YouTube com IA grátis
+// @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.5.0
+// @version           0.6.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
+// @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
+// @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
+// @description:ja     YouTube 動画ページの字幕を取得し、選んだ AI（AI Studio、Gemini、ChatGPT、Claude、Grok）にそのまま送って無料で要約します
+// @description:ko     YouTube 동영상 페이지의 자막을 가져와 선택한 AI(AI Studio, Gemini, ChatGPT, Claude, Grok)로 바로 보내 무료로 요약합니다
+// @description:es     Captura los subtítulos de la página de un vídeo de YouTube y los envía directamente a la IA que elijas (AI Studio, Gemini, ChatGPT, Claude o Grok) para un resumen gratis
+// @description:fr     Récupère les sous-titres affichés sur la page d'une vidéo YouTube et les envoie directement à l'IA de votre choix (AI Studio, Gemini, ChatGPT, Claude ou Grok) pour un résumé gratuit
+// @description:de     Erfasst die Untertitel auf der Seite eines YouTube-Videos und sendet sie direkt an die KI deiner Wahl (AI Studio, Gemini, ChatGPT, Claude oder Grok) für eine kostenlose Zusammenfassung
+// @description:pt-BR  Captura as legendas na página de um vídeo do YouTube e as envia direto para a IA que você escolher (AI Studio, Gemini, ChatGPT, Claude ou Grok) para um resumo grátis
+// @description:ru     Захватывает субтитры со страницы видео на YouTube и отправляет их напрямую выбранному ИИ (AI Studio, Gemini, ChatGPT, Claude или Grok) для бесплатного резюме
 // @homepageURL       https://github.com/nathan60107/YoutubeFreeAISummary#readme
 // @supportURL        https://github.com/nathan60107/YoutubeFreeAISummary/issues
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=1e94c46
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=355797b
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -29,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=1e94c46
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=355797b
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -70,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "greasyfork";
-    const buildNumberRaw = "1e94c46";
+    const buildNumberRaw = "355797b";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -106,6 +124,693 @@
         version: GM.info.script.version,
         namespace: GM.info.script.namespace,
     };
+
+    /**
+     * English locale — the reference dictionary.
+     *
+     * Its keys define the {@linkcode TranslationKey} union that every other locale must satisfy, and its
+     * values are the runtime fallback used whenever an active locale is missing a key. When you add a new
+     * user-facing string, add it here first; TypeScript will then flag it as missing in the other locales.
+     *
+     * Values may contain trusted inline HTML (e.g. `<code>…</code>`) — they are our own constants, never
+     * user input, and are injected through the Trusted Types policy. `%1`, `%2`, … are positional
+     * placeholders replaced by {@linkcode t} arguments.
+     */
+    const en = {
+        // Settings modal
+        "settings.dialogLabel": "YFAS Settings",
+        "settings.title": "YouTube Summary Settings",
+        "settings.provider.label": "AI service",
+        "settings.provider.hint": "Choose which AI receives the summary (you must be signed in to it first)",
+        "settings.provider.recommended": " (recommended)",
+        "settings.language.label": "Interface language",
+        "settings.language.hint": "Language this script's own interface is shown in",
+        "settings.language.auto": "Follow browser",
+        "settings.prompt.label": "Prompt template",
+        "settings.prompt.hint": "Variables: <code>{{title}}</code> title, <code>{{url}}</code> link, <code>{{transcript}}</code> subtitles",
+        "settings.langs.label": "Preferred subtitle languages",
+        "settings.langs.hint": "Comma-separated language codes, e.g. <code>zh-TW, ja, en</code>. Empty = follow browser language",
+        "settings.langs.placeholder": "Empty = auto",
+        "settings.timestamps": "Include timestamps in subtitles (<code>[h:mm:ss]</code>)",
+        "settings.autoSubmit": "Auto-submit after injecting",
+        "settings.reset": "Reset to defaults",
+        "settings.cancel": "Cancel",
+        "settings.save": "Save",
+        // Summary button (YouTube side)
+        "button.label": "Summarize",
+        "button.summarizeWith": "Summarize with %1",
+        "button.settings": "Settings",
+        "button.noCaptions": "This video has no captions available, so it can't be summarized",
+        // Failure-feedback modal
+        "feedback.title": "Summary failed",
+        "feedback.defaultMessage": "The summary failed. Please refresh the page and try again.",
+        "feedback.debug.lead": "This problem seems to keep happening. If it persists, please help report it so it can be fixed faster:",
+        "feedback.debug.step1": "Click “Copy diagnostics” below.",
+        "feedback.debug.step2": "Go to the issue tracker and open a new issue.",
+        "feedback.debug.step3": "Paste what you copied and briefly describe what you did.",
+        "feedback.debug.copy": "Copy diagnostics",
+        "feedback.debug.copied": "Copied ✓",
+        "feedback.debug.copyFailed": "Copy failed, please select manually",
+        "feedback.debug.issue": "Go to the issue tracker ↗",
+        "feedback.close": "Close",
+        // Error messages shown in the feedback modal
+        "error.noCaptions": "No subtitles/translations were found for this video, so it can't be summarized. Make sure the video has captions, then refresh and try again.",
+        "error.noInput": "Couldn't find the input box on %1 — the page may not have finished loading, or its layout changed. Please refresh and try again.",
+        // Per-provider quality/limitation notes (shown in settings when selected)
+        "provider.aistudio.note": "Best quality: no length limit and free access to Pro models; longer thinking time, but very accurate results. Great for long subtitles.",
+        "provider.gemini.note": "Good results, but the input box has a length limit; longer subtitles may not paste in full.",
+        "provider.chatgpt.note": "Weaker free model; may not respond at all when the subtitles are too long. Best for shorter videos.",
+        "provider.claude.note": "Longer thinking time; results occasionally have minor flaws.",
+        "provider.grok.note": "Quality below AI Studio; results occasionally have minor flaws.",
+        // Development-only menu command
+        "dev.clearFailures": "[dev] Clear failure count",
+        // Default summary prompt sent to the AI. Keep the {{title}}/{{url}}/{{transcript}} tokens verbatim.
+        "prompt.default": [
+            "Summarize the key points of the following YouTube video subtitles (with timestamps), and mark the corresponding timestamp for each point.",
+            "",
+            "Title: {{title}}",
+            "URL: {{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** 繁體中文 (Traditional Chinese). */
+    const zhTW = {
+        "settings.dialogLabel": "YFAS 設定",
+        "settings.title": "YouTube 摘要設定",
+        "settings.provider.label": "AI 服務",
+        "settings.provider.hint": "選擇摘要要送到哪個 AI（需先登入該服務）",
+        "settings.provider.recommended": "（推薦）",
+        "settings.language.label": "介面語言",
+        "settings.language.hint": "此腳本介面顯示的語言",
+        "settings.language.auto": "跟隨瀏覽器",
+        "settings.prompt.label": "提示詞模板",
+        "settings.prompt.hint": "可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{transcript}}</code> 字幕",
+        "settings.langs.label": "偏好字幕語言",
+        "settings.langs.hint": "逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言",
+        "settings.langs.placeholder": "留空＝自動",
+        "settings.timestamps": "字幕包含時間戳（<code>[h:mm:ss]</code>）",
+        "settings.autoSubmit": "注入後自動送出",
+        "settings.reset": "重設為預設",
+        "settings.cancel": "取消",
+        "settings.save": "儲存",
+        "button.label": "摘要",
+        "button.summarizeWith": "用 %1 摘要",
+        "button.settings": "設定",
+        "button.noCaptions": "這部影片沒有可用的字幕，無法摘要",
+        "feedback.title": "摘要失敗",
+        "feedback.defaultMessage": "摘要失敗了。請重新整理頁面後再試一次。",
+        "feedback.debug.lead": "這個問題似乎連續發生了。若持續無法使用，請協助回報，讓問題更快被修好：",
+        "feedback.debug.step1": "點下方「複製診斷資訊」。",
+        "feedback.debug.step2": "前往問題回報頁開一個新的 issue。",
+        "feedback.debug.step3": "把剛剛複製的內容貼上，並簡述你的操作。",
+        "feedback.debug.copy": "複製診斷資訊",
+        "feedback.debug.copied": "已複製 ✓",
+        "feedback.debug.copyFailed": "複製失敗，請手動選取",
+        "feedback.debug.issue": "前往問題回報頁 ↗",
+        "feedback.close": "關閉",
+        "error.noCaptions": "找不到這部影片的字幕／翻譯，無法摘要。請確認影片有字幕，重新整理頁面後再試一次。",
+        "error.noInput": "在 %1 找不到輸入框，可能是頁面尚未載入完成或版面改版。請重新整理頁面後再試一次。",
+        "provider.aistudio.note": "品質最佳：不限字數、可免費使用 Pro 模型；思考時間較長，但結果非常準確。適合長字幕。",
+        "provider.gemini.note": "結果品質良好，但輸入框有長度限制，較長的字幕可能無法完整貼入。",
+        "provider.chatgpt.note": "免費模型品質較弱；字幕過長時可能直接不回應。適合較短的影片。",
+        "provider.claude.note": "思考時間較長，結果偶有瑕疵。",
+        "provider.grok.note": "品質次於 AI Studio，結果偶有小瑕疵。",
+        "dev.clearFailures": "[dev] 清除失敗計數",
+        "prompt.default": [
+            "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。",
+            "",
+            "影片標題：{{title}}",
+            "影片連結：{{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** 简体中文 (Simplified Chinese). */
+    const zhCN = {
+        "settings.dialogLabel": "YFAS 设置",
+        "settings.title": "YouTube 摘要设置",
+        "settings.provider.label": "AI 服务",
+        "settings.provider.hint": "选择摘要要发送到哪个 AI（需先登录该服务）",
+        "settings.provider.recommended": "（推荐）",
+        "settings.language.label": "界面语言",
+        "settings.language.hint": "此脚本界面显示的语言",
+        "settings.language.auto": "跟随浏览器",
+        "settings.prompt.label": "提示词模板",
+        "settings.prompt.hint": "可用变量：<code>{{title}}</code> 标题、<code>{{url}}</code> 链接、<code>{{transcript}}</code> 字幕",
+        "settings.langs.label": "偏好字幕语言",
+        "settings.langs.hint": "逗号分隔的语言代码，例如 <code>zh-TW, ja, en</code>。留空＝跟随浏览器语言",
+        "settings.langs.placeholder": "留空＝自动",
+        "settings.timestamps": "字幕包含时间戳（<code>[h:mm:ss]</code>）",
+        "settings.autoSubmit": "注入后自动发送",
+        "settings.reset": "重置为默认",
+        "settings.cancel": "取消",
+        "settings.save": "保存",
+        "button.label": "摘要",
+        "button.summarizeWith": "用 %1 摘要",
+        "button.settings": "设置",
+        "button.noCaptions": "这部视频没有可用的字幕，无法摘要",
+        "feedback.title": "摘要失败",
+        "feedback.defaultMessage": "摘要失败了。请刷新页面后再试一次。",
+        "feedback.debug.lead": "这个问题似乎连续发生了。若持续无法使用，请协助反馈，让问题更快被修复：",
+        "feedback.debug.step1": "点击下方“复制诊断信息”。",
+        "feedback.debug.step2": "前往问题反馈页开一个新的 issue。",
+        "feedback.debug.step3": "把刚刚复制的内容粘贴上去，并简述你的操作。",
+        "feedback.debug.copy": "复制诊断信息",
+        "feedback.debug.copied": "已复制 ✓",
+        "feedback.debug.copyFailed": "复制失败，请手动选取",
+        "feedback.debug.issue": "前往问题反馈页 ↗",
+        "feedback.close": "关闭",
+        "error.noCaptions": "找不到这部视频的字幕／翻译，无法摘要。请确认视频有字幕，刷新页面后再试一次。",
+        "error.noInput": "在 %1 找不到输入框，可能是页面尚未加载完成或版面改版。请刷新页面后再试一次。",
+        "provider.aistudio.note": "品质最佳：不限字数、可免费使用 Pro 模型；思考时间较长，但结果非常准确。适合长字幕。",
+        "provider.gemini.note": "结果品质良好，但输入框有长度限制，较长的字幕可能无法完整粘贴。",
+        "provider.chatgpt.note": "免费模型品质较弱；字幕过长时可能直接不回应。适合较短的视频。",
+        "provider.claude.note": "思考时间较长，结果偶有瑕疵。",
+        "provider.grok.note": "品质次于 AI Studio，结果偶有小瑕疵。",
+        "dev.clearFailures": "[dev] 清除失败计数",
+        "prompt.default": [
+            "请依据以下 YouTube 视频字幕（含时间轴）做重点摘要，并在每个重点标注对应的时间戳。",
+            "",
+            "视频标题：{{title}}",
+            "视频链接：{{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** 日本語 (Japanese). */
+    const ja = {
+        "settings.dialogLabel": "YFAS 設定",
+        "settings.title": "YouTube 要約の設定",
+        "settings.provider.label": "AI サービス",
+        "settings.provider.hint": "要約を送る AI を選択します（事前にそのサービスへのログインが必要です）",
+        "settings.provider.recommended": "（推奨）",
+        "settings.language.label": "表示言語",
+        "settings.language.hint": "このスクリプトの画面を表示する言語",
+        "settings.language.auto": "ブラウザに従う",
+        "settings.prompt.label": "プロンプトのテンプレート",
+        "settings.prompt.hint": "使用できる変数：<code>{{title}}</code> タイトル、<code>{{url}}</code> リンク、<code>{{transcript}}</code> 字幕",
+        "settings.langs.label": "優先する字幕の言語",
+        "settings.langs.hint": "カンマ区切りの言語コード（例：<code>zh-TW, ja, en</code>）。空欄＝ブラウザの言語に従う",
+        "settings.langs.placeholder": "空欄＝自動",
+        "settings.timestamps": "字幕にタイムスタンプを含める（<code>[h:mm:ss]</code>）",
+        "settings.autoSubmit": "入力後に自動送信する",
+        "settings.reset": "初期設定に戻す",
+        "settings.cancel": "キャンセル",
+        "settings.save": "保存",
+        "button.label": "要約",
+        "button.summarizeWith": "%1 で要約",
+        "button.settings": "設定",
+        "button.noCaptions": "この動画には利用できる字幕がないため、要約できません",
+        "feedback.title": "要約に失敗しました",
+        "feedback.defaultMessage": "要約に失敗しました。ページを再読み込みしてもう一度お試しください。",
+        "feedback.debug.lead": "この問題が繰り返し発生しているようです。解決しない場合は、より早く修正できるよう報告にご協力ください：",
+        "feedback.debug.step1": "下の「診断情報をコピー」をクリックします。",
+        "feedback.debug.step2": "問題報告ページで新しい issue を作成します。",
+        "feedback.debug.step3": "コピーした内容を貼り付け、操作内容を簡単に説明してください。",
+        "feedback.debug.copy": "診断情報をコピー",
+        "feedback.debug.copied": "コピーしました ✓",
+        "feedback.debug.copyFailed": "コピーに失敗しました。手動で選択してください",
+        "feedback.debug.issue": "問題報告ページへ ↗",
+        "feedback.close": "閉じる",
+        "error.noCaptions": "この動画の字幕／翻訳が見つからないため、要約できません。動画に字幕があることを確認し、ページを再読み込みしてからもう一度お試しください。",
+        "error.noInput": "%1 で入力欄が見つかりませんでした。ページの読み込みが完了していないか、レイアウトが変更された可能性があります。ページを再読み込みしてもう一度お試しください。",
+        "provider.aistudio.note": "最高品質：文字数制限なし、Pro モデルを無料で利用可能。思考時間は長めですが、結果は非常に正確です。長い字幕に最適。",
+        "provider.gemini.note": "結果の品質は良好ですが、入力欄に文字数制限があり、長い字幕は全文を貼り付けられない場合があります。",
+        "provider.chatgpt.note": "無料モデルは品質がやや低く、字幕が長すぎると応答しないことがあります。短い動画に最適。",
+        "provider.claude.note": "思考時間が長めで、結果にまれに不備があります。",
+        "provider.grok.note": "品質は AI Studio に次ぎ、結果にまれに小さな不備があります。",
+        "dev.clearFailures": "[dev] 失敗カウントをクリア",
+        "prompt.default": [
+            "以下の YouTube 動画の字幕（タイムスタンプ付き）をもとに要点を要約し、各要点に対応するタイムスタンプを付記してください。",
+            "",
+            "タイトル：{{title}}",
+            "URL：{{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** 한국어 (Korean). */
+    const ko = {
+        "settings.dialogLabel": "YFAS 설정",
+        "settings.title": "YouTube 요약 설정",
+        "settings.provider.label": "AI 서비스",
+        "settings.provider.hint": "요약을 보낼 AI를 선택하세요 (해당 서비스에 먼저 로그인해야 합니다)",
+        "settings.provider.recommended": " (추천)",
+        "settings.language.label": "인터페이스 언어",
+        "settings.language.hint": "이 스크립트 화면을 표시할 언어",
+        "settings.language.auto": "브라우저 따르기",
+        "settings.prompt.label": "프롬프트 템플릿",
+        "settings.prompt.hint": "사용 가능한 변수: <code>{{title}}</code> 제목, <code>{{url}}</code> 링크, <code>{{transcript}}</code> 자막",
+        "settings.langs.label": "선호 자막 언어",
+        "settings.langs.hint": "쉼표로 구분한 언어 코드, 예: <code>zh-TW, ja, en</code>. 비워 두면 브라우저 언어를 따릅니다",
+        "settings.langs.placeholder": "비워 두면 자동",
+        "settings.timestamps": "자막에 타임스탬프 포함 (<code>[h:mm:ss]</code>)",
+        "settings.autoSubmit": "입력 후 자동 전송",
+        "settings.reset": "기본값으로 재설정",
+        "settings.cancel": "취소",
+        "settings.save": "저장",
+        "button.label": "요약",
+        "button.summarizeWith": "%1(으)로 요약",
+        "button.settings": "설정",
+        "button.noCaptions": "이 동영상에는 사용할 수 있는 자막이 없어 요약할 수 없습니다",
+        "feedback.title": "요약 실패",
+        "feedback.defaultMessage": "요약에 실패했습니다. 페이지를 새로고침한 후 다시 시도해 주세요.",
+        "feedback.debug.lead": "이 문제가 계속 발생하는 것 같습니다. 계속된다면 더 빨리 고칠 수 있도록 신고에 협조해 주세요:",
+        "feedback.debug.step1": "아래의 “진단 정보 복사”를 클릭하세요.",
+        "feedback.debug.step2": "이슈 트래커로 이동해 새 issue를 여세요.",
+        "feedback.debug.step3": "복사한 내용을 붙여넣고 어떤 작업을 했는지 간단히 설명해 주세요.",
+        "feedback.debug.copy": "진단 정보 복사",
+        "feedback.debug.copied": "복사됨 ✓",
+        "feedback.debug.copyFailed": "복사 실패, 직접 선택해 주세요",
+        "feedback.debug.issue": "이슈 트래커로 이동 ↗",
+        "feedback.close": "닫기",
+        "error.noCaptions": "이 동영상의 자막/번역을 찾을 수 없어 요약할 수 없습니다. 동영상에 자막이 있는지 확인한 뒤 새로고침하고 다시 시도해 주세요.",
+        "error.noInput": "%1에서 입력창을 찾지 못했습니다. 페이지 로딩이 끝나지 않았거나 레이아웃이 바뀌었을 수 있습니다. 새로고침한 후 다시 시도해 주세요.",
+        "provider.aistudio.note": "최고 품질: 글자 수 제한 없이 Pro 모델을 무료로 사용할 수 있습니다. 사고 시간은 길지만 결과가 매우 정확합니다. 긴 자막에 적합합니다.",
+        "provider.gemini.note": "결과 품질은 좋지만 입력창에 길이 제한이 있어 긴 자막은 전체가 붙여넣어지지 않을 수 있습니다.",
+        "provider.chatgpt.note": "무료 모델은 품질이 약한 편이며 자막이 너무 길면 아예 응답하지 않을 수 있습니다. 짧은 동영상에 적합합니다.",
+        "provider.claude.note": "사고 시간이 길고 결과에 가끔 사소한 결함이 있습니다.",
+        "provider.grok.note": "품질은 AI Studio보다 낮고 결과에 가끔 사소한 결함이 있습니다.",
+        "dev.clearFailures": "[dev] 실패 횟수 초기화",
+        "prompt.default": [
+            "다음 YouTube 동영상 자막(타임스탬프 포함)을 바탕으로 핵심 내용을 요약하고, 각 항목에 해당하는 타임스탬프를 표시해 주세요.",
+            "",
+            "제목: {{title}}",
+            "URL: {{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** Español (Spanish). */
+    const es = {
+        "settings.dialogLabel": "Ajustes de YFAS",
+        "settings.title": "Ajustes del resumen de YouTube",
+        "settings.provider.label": "Servicio de IA",
+        "settings.provider.hint": "Elige a qué IA se envía el resumen (primero debes haber iniciado sesión en ella)",
+        "settings.provider.recommended": " (recomendado)",
+        "settings.language.label": "Idioma de la interfaz",
+        "settings.language.hint": "Idioma en el que se muestra la interfaz de este script",
+        "settings.language.auto": "Seguir el navegador",
+        "settings.prompt.label": "Plantilla del prompt",
+        "settings.prompt.hint": "Variables: <code>{{title}}</code> título, <code>{{url}}</code> enlace, <code>{{transcript}}</code> subtítulos",
+        "settings.langs.label": "Idiomas de subtítulos preferidos",
+        "settings.langs.hint": "Códigos de idioma separados por comas, p. ej. <code>zh-TW, ja, en</code>. Vacío = seguir el idioma del navegador",
+        "settings.langs.placeholder": "Vacío = automático",
+        "settings.timestamps": "Incluir marcas de tiempo en los subtítulos (<code>[h:mm:ss]</code>)",
+        "settings.autoSubmit": "Enviar automáticamente tras insertar",
+        "settings.reset": "Restablecer valores predeterminados",
+        "settings.cancel": "Cancelar",
+        "settings.save": "Guardar",
+        "button.label": "Resumir",
+        "button.summarizeWith": "Resumir con %1",
+        "button.settings": "Ajustes",
+        "button.noCaptions": "Este vídeo no tiene subtítulos disponibles, así que no se puede resumir",
+        "feedback.title": "El resumen falló",
+        "feedback.defaultMessage": "El resumen falló. Actualiza la página e inténtalo de nuevo.",
+        "feedback.debug.lead": "Este problema parece repetirse. Si continúa, ayúdanos a informarlo para que se pueda solucionar más rápido:",
+        "feedback.debug.step1": "Haz clic en «Copiar diagnóstico» abajo.",
+        "feedback.debug.step2": "Ve al gestor de incidencias y abre una nueva.",
+        "feedback.debug.step3": "Pega lo que copiaste y describe brevemente lo que hiciste.",
+        "feedback.debug.copy": "Copiar diagnóstico",
+        "feedback.debug.copied": "Copiado ✓",
+        "feedback.debug.copyFailed": "Error al copiar, selecciónalo manualmente",
+        "feedback.debug.issue": "Ir al gestor de incidencias ↗",
+        "feedback.close": "Cerrar",
+        "error.noCaptions": "No se encontraron subtítulos ni traducciones para este vídeo, así que no se puede resumir. Asegúrate de que el vídeo tenga subtítulos, actualiza la página e inténtalo de nuevo.",
+        "error.noInput": "No se encontró el cuadro de texto en %1. Puede que la página no haya terminado de cargar o que su diseño haya cambiado. Actualiza la página e inténtalo de nuevo.",
+        "provider.aistudio.note": "La mejor calidad: sin límite de longitud y acceso gratuito a modelos Pro; el tiempo de razonamiento es más largo, pero los resultados son muy precisos. Ideal para subtítulos largos.",
+        "provider.gemini.note": "Buenos resultados, pero el cuadro de texto tiene un límite de longitud; los subtítulos largos podrían no pegarse por completo.",
+        "provider.chatgpt.note": "El modelo gratuito es más débil; puede no responder cuando los subtítulos son demasiado largos. Mejor para vídeos cortos.",
+        "provider.claude.note": "Tiempo de razonamiento más largo; los resultados a veces tienen pequeños defectos.",
+        "provider.grok.note": "Calidad inferior a AI Studio; los resultados a veces tienen pequeños defectos.",
+        "dev.clearFailures": "[dev] Borrar el contador de fallos",
+        "prompt.default": [
+            "Resume los puntos clave de los siguientes subtítulos de un vídeo de YouTube (con marcas de tiempo), e indica la marca de tiempo correspondiente a cada punto.",
+            "",
+            "Título: {{title}}",
+            "URL: {{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** Français (French). */
+    const fr = {
+        "settings.dialogLabel": "Paramètres YFAS",
+        "settings.title": "Paramètres du résumé YouTube",
+        "settings.provider.label": "Service d’IA",
+        "settings.provider.hint": "Choisissez à quelle IA le résumé est envoyé (vous devez d’abord y être connecté)",
+        "settings.provider.recommended": " (recommandé)",
+        "settings.language.label": "Langue de l’interface",
+        "settings.language.hint": "Langue d’affichage de l’interface de ce script",
+        "settings.language.auto": "Suivre le navigateur",
+        "settings.prompt.label": "Modèle de prompt",
+        "settings.prompt.hint": "Variables : <code>{{title}}</code> titre, <code>{{url}}</code> lien, <code>{{transcript}}</code> sous-titres",
+        "settings.langs.label": "Langues de sous-titres préférées",
+        "settings.langs.hint": "Codes de langue séparés par des virgules, p. ex. <code>zh-TW, ja, en</code>. Vide = suivre la langue du navigateur",
+        "settings.langs.placeholder": "Vide = automatique",
+        "settings.timestamps": "Inclure les horodatages dans les sous-titres (<code>[h:mm:ss]</code>)",
+        "settings.autoSubmit": "Envoyer automatiquement après insertion",
+        "settings.reset": "Réinitialiser aux valeurs par défaut",
+        "settings.cancel": "Annuler",
+        "settings.save": "Enregistrer",
+        "button.label": "Résumer",
+        "button.summarizeWith": "Résumer avec %1",
+        "button.settings": "Paramètres",
+        "button.noCaptions": "Cette vidéo n’a aucun sous-titre disponible, elle ne peut donc pas être résumée",
+        "feedback.title": "Échec du résumé",
+        "feedback.defaultMessage": "Le résumé a échoué. Veuillez actualiser la page et réessayer.",
+        "feedback.debug.lead": "Ce problème semble se répéter. S’il persiste, aidez-nous à le signaler pour qu’il soit corrigé plus vite :",
+        "feedback.debug.step1": "Cliquez sur « Copier le diagnostic » ci-dessous.",
+        "feedback.debug.step2": "Rendez-vous sur le suivi des problèmes et ouvrez un nouveau ticket.",
+        "feedback.debug.step3": "Collez ce que vous avez copié et décrivez brièvement ce que vous avez fait.",
+        "feedback.debug.copy": "Copier le diagnostic",
+        "feedback.debug.copied": "Copié ✓",
+        "feedback.debug.copyFailed": "Échec de la copie, sélectionnez manuellement",
+        "feedback.debug.issue": "Aller au suivi des problèmes ↗",
+        "feedback.close": "Fermer",
+        "error.noCaptions": "Aucun sous-titre ni traduction n’a été trouvé pour cette vidéo, elle ne peut donc pas être résumée. Assurez-vous que la vidéo a des sous-titres, puis actualisez et réessayez.",
+        "error.noInput": "Impossible de trouver le champ de saisie sur %1 — la page n’a peut-être pas fini de charger, ou sa mise en page a changé. Veuillez actualiser et réessayer.",
+        "provider.aistudio.note": "Meilleure qualité : aucune limite de longueur et accès gratuit aux modèles Pro ; temps de réflexion plus long, mais résultats très précis. Idéal pour les longs sous-titres.",
+        "provider.gemini.note": "Bons résultats, mais le champ de saisie a une limite de longueur ; les longs sous-titres risquent de ne pas être collés en entier.",
+        "provider.chatgpt.note": "Modèle gratuit plus faible ; il peut ne pas répondre du tout quand les sous-titres sont trop longs. Idéal pour les vidéos courtes.",
+        "provider.claude.note": "Temps de réflexion plus long ; les résultats présentent parfois de petits défauts.",
+        "provider.grok.note": "Qualité inférieure à AI Studio ; les résultats présentent parfois de petits défauts.",
+        "dev.clearFailures": "[dev] Réinitialiser le compteur d’échecs",
+        "prompt.default": [
+            "Résume les points clés des sous-titres suivants d’une vidéo YouTube (avec horodatage), et indique l’horodatage correspondant à chaque point.",
+            "",
+            "Titre : {{title}}",
+            "URL : {{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** Deutsch (German). */
+    const de = {
+        "settings.dialogLabel": "YFAS-Einstellungen",
+        "settings.title": "Einstellungen der YouTube-Zusammenfassung",
+        "settings.provider.label": "KI-Dienst",
+        "settings.provider.hint": "Wähle, an welche KI die Zusammenfassung gesendet wird (du musst dort zuerst angemeldet sein)",
+        "settings.provider.recommended": " (empfohlen)",
+        "settings.language.label": "Oberflächensprache",
+        "settings.language.hint": "Sprache, in der die Oberfläche dieses Skripts angezeigt wird",
+        "settings.language.auto": "Browser folgen",
+        "settings.prompt.label": "Prompt-Vorlage",
+        "settings.prompt.hint": "Variablen: <code>{{title}}</code> Titel, <code>{{url}}</code> Link, <code>{{transcript}}</code> Untertitel",
+        "settings.langs.label": "Bevorzugte Untertitelsprachen",
+        "settings.langs.hint": "Kommagetrennte Sprachcodes, z. B. <code>zh-TW, ja, en</code>. Leer = der Browsersprache folgen",
+        "settings.langs.placeholder": "Leer = automatisch",
+        "settings.timestamps": "Zeitstempel in Untertiteln einschließen (<code>[h:mm:ss]</code>)",
+        "settings.autoSubmit": "Nach dem Einfügen automatisch absenden",
+        "settings.reset": "Auf Standard zurücksetzen",
+        "settings.cancel": "Abbrechen",
+        "settings.save": "Speichern",
+        "button.label": "Zusammenfassen",
+        "button.summarizeWith": "Mit %1 zusammenfassen",
+        "button.settings": "Einstellungen",
+        "button.noCaptions": "Dieses Video hat keine verfügbaren Untertitel und kann daher nicht zusammengefasst werden",
+        "feedback.title": "Zusammenfassung fehlgeschlagen",
+        "feedback.defaultMessage": "Die Zusammenfassung ist fehlgeschlagen. Bitte lade die Seite neu und versuche es erneut.",
+        "feedback.debug.lead": "Dieses Problem scheint wiederholt aufzutreten. Falls es weiterhin besteht, hilf bitte mit, es zu melden, damit es schneller behoben werden kann:",
+        "feedback.debug.step1": "Klicke unten auf „Diagnose kopieren“.",
+        "feedback.debug.step2": "Gehe zum Issue-Tracker und öffne ein neues Issue.",
+        "feedback.debug.step3": "Füge das Kopierte ein und beschreibe kurz, was du getan hast.",
+        "feedback.debug.copy": "Diagnose kopieren",
+        "feedback.debug.copied": "Kopiert ✓",
+        "feedback.debug.copyFailed": "Kopieren fehlgeschlagen, bitte manuell auswählen",
+        "feedback.debug.issue": "Zum Issue-Tracker ↗",
+        "feedback.close": "Schließen",
+        "error.noCaptions": "Für dieses Video wurden keine Untertitel/Übersetzungen gefunden, daher kann es nicht zusammengefasst werden. Stelle sicher, dass das Video Untertitel hat, lade die Seite neu und versuche es erneut.",
+        "error.noInput": "Das Eingabefeld auf %1 wurde nicht gefunden – die Seite ist möglicherweise noch nicht fertig geladen oder ihr Layout hat sich geändert. Bitte lade die Seite neu und versuche es erneut.",
+        "provider.aistudio.note": "Beste Qualität: keine Längenbegrenzung und kostenloser Zugriff auf Pro-Modelle; längere Denkzeit, aber sehr genaue Ergebnisse. Ideal für lange Untertitel.",
+        "provider.gemini.note": "Gute Ergebnisse, aber das Eingabefeld hat eine Längenbegrenzung; längere Untertitel lassen sich womöglich nicht vollständig einfügen.",
+        "provider.chatgpt.note": "Schwächeres kostenloses Modell; antwortet bei zu langen Untertiteln möglicherweise gar nicht. Am besten für kürzere Videos.",
+        "provider.claude.note": "Längere Denkzeit; die Ergebnisse haben gelegentlich kleine Mängel.",
+        "provider.grok.note": "Qualität unter AI Studio; die Ergebnisse haben gelegentlich kleine Mängel.",
+        "dev.clearFailures": "[dev] Fehlerzähler zurücksetzen",
+        "prompt.default": [
+            "Fasse die wichtigsten Punkte der folgenden Untertitel eines YouTube-Videos (mit Zeitstempeln) zusammen und gib zu jedem Punkt den entsprechenden Zeitstempel an.",
+            "",
+            "Titel: {{title}}",
+            "URL: {{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** Português (Brasil) — Brazilian Portuguese. */
+    const ptBR = {
+        "settings.dialogLabel": "Configurações do YFAS",
+        "settings.title": "Configurações do resumo do YouTube",
+        "settings.provider.label": "Serviço de IA",
+        "settings.provider.hint": "Escolha para qual IA o resumo é enviado (você precisa estar conectado a ela primeiro)",
+        "settings.provider.recommended": " (recomendado)",
+        "settings.language.label": "Idioma da interface",
+        "settings.language.hint": "Idioma em que a interface deste script é exibida",
+        "settings.language.auto": "Seguir o navegador",
+        "settings.prompt.label": "Modelo de prompt",
+        "settings.prompt.hint": "Variáveis: <code>{{title}}</code> título, <code>{{url}}</code> link, <code>{{transcript}}</code> legendas",
+        "settings.langs.label": "Idiomas de legenda preferidos",
+        "settings.langs.hint": "Códigos de idioma separados por vírgula, ex.: <code>zh-TW, ja, en</code>. Vazio = seguir o idioma do navegador",
+        "settings.langs.placeholder": "Vazio = automático",
+        "settings.timestamps": "Incluir marcações de tempo nas legendas (<code>[h:mm:ss]</code>)",
+        "settings.autoSubmit": "Enviar automaticamente após inserir",
+        "settings.reset": "Restaurar padrões",
+        "settings.cancel": "Cancelar",
+        "settings.save": "Salvar",
+        "button.label": "Resumir",
+        "button.summarizeWith": "Resumir com %1",
+        "button.settings": "Configurações",
+        "button.noCaptions": "Este vídeo não tem legendas disponíveis, então não é possível resumi-lo",
+        "feedback.title": "Falha no resumo",
+        "feedback.defaultMessage": "O resumo falhou. Atualize a página e tente novamente.",
+        "feedback.debug.lead": "Esse problema parece estar se repetindo. Se continuar, ajude a relatá-lo para que possa ser corrigido mais rápido:",
+        "feedback.debug.step1": "Clique em “Copiar diagnóstico” abaixo.",
+        "feedback.debug.step2": "Vá ao rastreador de problemas e abra uma nova issue.",
+        "feedback.debug.step3": "Cole o que você copiou e descreva brevemente o que fez.",
+        "feedback.debug.copy": "Copiar diagnóstico",
+        "feedback.debug.copied": "Copiado ✓",
+        "feedback.debug.copyFailed": "Falha ao copiar, selecione manualmente",
+        "feedback.debug.issue": "Ir ao rastreador de problemas ↗",
+        "feedback.close": "Fechar",
+        "error.noCaptions": "Não foram encontradas legendas/traduções para este vídeo, então não é possível resumi-lo. Verifique se o vídeo tem legendas, atualize a página e tente novamente.",
+        "error.noInput": "Não foi possível encontrar o campo de entrada em %1 — a página pode não ter terminado de carregar, ou seu layout mudou. Atualize a página e tente novamente.",
+        "provider.aistudio.note": "Melhor qualidade: sem limite de tamanho e acesso gratuito a modelos Pro; tempo de raciocínio maior, mas resultados muito precisos. Ótimo para legendas longas.",
+        "provider.gemini.note": "Bons resultados, mas o campo de entrada tem limite de tamanho; legendas longas podem não ser coladas por completo.",
+        "provider.chatgpt.note": "Modelo gratuito mais fraco; pode não responder quando as legendas são muito longas. Melhor para vídeos curtos.",
+        "provider.claude.note": "Tempo de raciocínio maior; os resultados ocasionalmente têm pequenas falhas.",
+        "provider.grok.note": "Qualidade abaixo do AI Studio; os resultados ocasionalmente têm pequenas falhas.",
+        "dev.clearFailures": "[dev] Limpar contagem de falhas",
+        "prompt.default": [
+            "Resuma os pontos principais das seguintes legendas de um vídeo do YouTube (com marcações de tempo) e indique a marcação de tempo correspondente a cada ponto.",
+            "",
+            "Título: {{title}}",
+            "URL: {{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /** Русский (Russian). */
+    const ru = {
+        "settings.dialogLabel": "Настройки YFAS",
+        "settings.title": "Настройки резюме YouTube",
+        "settings.provider.label": "Сервис ИИ",
+        "settings.provider.hint": "Выберите, какому ИИ отправлять резюме (сначала нужно войти в этот сервис)",
+        "settings.provider.recommended": " (рекомендуется)",
+        "settings.language.label": "Язык интерфейса",
+        "settings.language.hint": "Язык, на котором отображается интерфейс этого скрипта",
+        "settings.language.auto": "Как в браузере",
+        "settings.prompt.label": "Шаблон запроса",
+        "settings.prompt.hint": "Переменные: <code>{{title}}</code> заголовок, <code>{{url}}</code> ссылка, <code>{{transcript}}</code> субтитры",
+        "settings.langs.label": "Предпочитаемые языки субтитров",
+        "settings.langs.hint": "Коды языков через запятую, например <code>zh-TW, ja, en</code>. Пусто = следовать языку браузера",
+        "settings.langs.placeholder": "Пусто = автоматически",
+        "settings.timestamps": "Включать тайм-коды в субтитры (<code>[h:mm:ss]</code>)",
+        "settings.autoSubmit": "Автоматически отправлять после вставки",
+        "settings.reset": "Сбросить к настройкам по умолчанию",
+        "settings.cancel": "Отмена",
+        "settings.save": "Сохранить",
+        "button.label": "Резюме",
+        "button.summarizeWith": "Резюмировать через %1",
+        "button.settings": "Настройки",
+        "button.noCaptions": "У этого видео нет доступных субтитров, поэтому его нельзя резюмировать",
+        "feedback.title": "Не удалось создать резюме",
+        "feedback.defaultMessage": "Не удалось создать резюме. Обновите страницу и попробуйте снова.",
+        "feedback.debug.lead": "Похоже, эта проблема повторяется. Если она не исчезает, помогите сообщить о ней, чтобы её быстрее исправили:",
+        "feedback.debug.step1": "Нажмите «Копировать диагностику» ниже.",
+        "feedback.debug.step2": "Перейдите в трекер задач и откройте новый issue.",
+        "feedback.debug.step3": "Вставьте скопированное и кратко опишите свои действия.",
+        "feedback.debug.copy": "Копировать диагностику",
+        "feedback.debug.copied": "Скопировано ✓",
+        "feedback.debug.copyFailed": "Не удалось скопировать, выделите вручную",
+        "feedback.debug.issue": "Перейти в трекер задач ↗",
+        "feedback.close": "Закрыть",
+        "error.noCaptions": "Для этого видео не найдены субтитры или перевод, поэтому его нельзя резюмировать. Убедитесь, что у видео есть субтитры, обновите страницу и попробуйте снова.",
+        "error.noInput": "Не удалось найти поле ввода на %1 — возможно, страница не догрузилась или её вёрстка изменилась. Обновите страницу и попробуйте снова.",
+        "provider.aistudio.note": "Лучшее качество: без ограничения длины и бесплатный доступ к моделям Pro; время обдумывания дольше, но результаты очень точные. Отлично подходит для длинных субтитров.",
+        "provider.gemini.note": "Хорошие результаты, но у поля ввода есть ограничение длины; длинные субтитры могут вставиться не полностью.",
+        "provider.chatgpt.note": "Бесплатная модель слабее; при слишком длинных субтитрах может вообще не ответить. Лучше для коротких видео.",
+        "provider.claude.note": "Время обдумывания дольше; в результатах изредка встречаются мелкие недочёты.",
+        "provider.grok.note": "Качество ниже, чем у AI Studio; в результатах изредка встречаются мелкие недочёты.",
+        "dev.clearFailures": "[dev] Сбросить счётчик ошибок",
+        "prompt.default": [
+            "Кратко изложи ключевые моменты по следующим субтитрам видео с YouTube (с тайм-кодами) и укажи соответствующий тайм-код для каждого пункта.",
+            "",
+            "Заголовок: {{title}}",
+            "Ссылка: {{url}}",
+            "",
+            "{{transcript}}",
+        ].join("\n"),
+    };
+
+    /**
+     * Tiny i18n engine for the userscript.
+     *
+     * Strings live in per-locale dictionaries under `./locales`. English (`en`) is the reference: it
+     * defines every {@linkcode TranslationKey} and is the runtime fallback when the active locale is
+     * missing a key. The active locale is resolved once at startup ({@linkcode initI18n}) from the user's
+     * saved `config.language` (or, when that is `"auto"`, from the browser's languages).
+     *
+     * Rendering helpers:
+     * - {@linkcode t} — translate a key in the active locale (used everywhere outside the settings modal).
+     * - {@linkcode translate} — translate a key in an *explicit* locale, so the settings modal can preview
+     *   another language without committing to it until the user saves.
+     * - {@linkcode applyI18n} — fills every `[data-i18n*]` element under a root, so modal markup can be
+     *   built once with attributes and (re-)localized in one call when the previewed language changes.
+     */
+    /** The special config value meaning "pick the locale from the browser". */
+    const AUTO_LANG = "auto";
+    /** All locale dictionaries, keyed by code. `en` doubles as the fallback. */
+    const dictionaries = {
+        "en": en,
+        "zh-TW": zhTW,
+        "zh-CN": zhCN,
+        "ja": ja,
+        "ko": ko,
+        "es": es,
+        "fr": fr,
+        "de": de,
+        "pt-BR": ptBR,
+        "ru": ru,
+    };
+    /**
+     * Locales offered in the settings dropdown, in display order, each labelled with its own endonym so a
+     * user can recognise their language regardless of the current interface language.
+     */
+    const supportedLanguages = [
+        { code: "en", label: "English" },
+        { code: "zh-TW", label: "繁體中文" },
+        { code: "zh-CN", label: "简体中文" },
+        { code: "ja", label: "日本語" },
+        { code: "ko", label: "한국어" },
+        { code: "es", label: "Español" },
+        { code: "fr", label: "Français" },
+        { code: "de", label: "Deutsch" },
+        { code: "pt-BR", label: "Português (BR)" },
+        { code: "ru", label: "Русский" },
+    ];
+    const langCodes = supportedLanguages.map(l => l.code);
+    /** Active locale, resolved by {@linkcode initI18n}. Defaults to English until then. */
+    let activeLang = "en";
+    /**
+     * Resolves a stored config language (`"auto"` or a specific code) to a concrete locale, matching the
+     * browser's preferred languages when set to auto. Falls back to English if nothing matches.
+     */
+    function resolveLanguage(configured) {
+        if (configured !== AUTO_LANG && langCodes.includes(configured))
+            return configured;
+        return matchBrowserLanguage();
+    }
+    /** Picks the best-supported locale from the browser's language preferences. */
+    function matchBrowserLanguage() {
+        const prefs = Array.isArray(navigator.languages) && navigator.languages.length > 0
+            ? navigator.languages
+            : [navigator.language];
+        for (const raw of prefs) {
+            const tag = raw === null || raw === void 0 ? void 0 : raw.trim();
+            if (!tag)
+                continue;
+            // Exact code match (case-insensitively), e.g. "pt-BR".
+            const exact = langCodes.find(c => c.toLowerCase() === tag.toLowerCase());
+            if (exact)
+                return exact;
+            // Chinese needs script/region disambiguation: Traditional (TW/HK/MO/Hant) vs. Simplified.
+            const lower = tag.toLowerCase();
+            if (lower.startsWith("zh"))
+                return /(^|-)(hant|tw|hk|mo)(-|$)/.test(lower) ? "zh-TW" : "zh-CN";
+            // Otherwise match on the primary subtag, e.g. "en-GB" -> "en", "pt-PT" -> "pt-BR".
+            const base = lower.split("-")[0];
+            const byBase = langCodes.find(c => c.split("-")[0] === base);
+            if (byBase)
+                return byBase;
+        }
+        return "en";
+    }
+    /** Sets the active locale used by {@linkcode t} and the default of {@linkcode applyI18n}. */
+    function setActiveLanguage(lang) {
+        activeLang = lang;
+    }
+    /** The currently active locale. */
+    function getActiveLanguage() {
+        return activeLang;
+    }
+    /**
+     * Resolves the active locale from the given stored config value and applies it. Call once after the
+     * config DataStore has loaded, on every page the script runs on.
+     */
+    function initI18n(configuredLanguage) {
+        setActiveLanguage(resolveLanguage(configuredLanguage));
+    }
+    /** Replaces `%1`, `%2`, … placeholders with the positional args (1-indexed). */
+    function interpolate(raw, args) {
+        if (args.length === 0)
+            return raw;
+        return raw.replace(/%(\d+)/g, (match, n) => {
+            const val = args[Number(n) - 1];
+            return val === undefined ? match : String(val);
+        });
+    }
+    /** Translates `key` in an explicit `lang`, falling back to English then the key itself. */
+    function translate(lang, key, ...args) {
+        var _a, _b, _c;
+        const raw = (_c = (_b = (_a = dictionaries[lang]) === null || _a === void 0 ? void 0 : _a[key]) !== null && _b !== void 0 ? _b : en[key]) !== null && _c !== void 0 ? _c : key;
+        return interpolate(raw, args);
+    }
+    /** Translates `key` in the active locale. */
+    function t(key, ...args) {
+        return translate(activeLang, key, ...args);
+    }
+    /**
+     * Localizes an already-rendered DOM subtree from its `data-i18n*` attributes, using `lang` (or the
+     * active locale). Lets modal markup be authored once with attributes and re-localized in one call
+     * when the previewed language changes:
+     * - `data-i18n` → element text content
+     * - `data-i18n-html` → element inner HTML (for values containing trusted `<code>` etc.)
+     * - `data-i18n-placeholder` → the `placeholder` attribute
+     *
+     * Callers must provide a `setHtml` sink (our Trusted Types-aware `setInnerHtml`) for the HTML variant;
+     * i18n stays free of DOM-injection policy that way.
+     */
+    function applyI18n(root, setHtml, lang = activeLang) {
+        root.querySelectorAll("[data-i18n]").forEach((el) => {
+            el.textContent = translate(lang, el.dataset.i18n);
+        });
+        root.querySelectorAll("[data-i18n-html]").forEach((el) => {
+            setHtml(el, translate(lang, el.dataset.i18nHtml));
+        });
+        root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+            el.placeholder = translate(lang, el.dataset.i18nPlaceholder);
+        });
+    }
 
     //#region logging
     /** Shared console prefix so every log is filterable and never lost behind a missing tag. */
@@ -412,34 +1117,33 @@
             logs.length > 0 ? logs.join("\n") : "(no logs captured)",
         ].join("\n");
     }
-    const defaultMessage = "摘要失敗了。請重新整理頁面後再試一次。";
     /** Builds and shows the modal. Only one is shown at a time. */
     function showModal(info, escalate) {
         var _a;
         const report = escalate ? buildDebugReport(info.context) : "";
         const handle = openModal({
             id: overlayId$1,
-            label: "摘要失敗",
+            label: t("feedback.title"),
             role: "alertdialog",
             innerHtml: `
-      <h2 class="yfas-modal-title">摘要失敗</h2>
+      <h2 class="yfas-modal-title">${t("feedback.title")}</h2>
       <p class="yfas-fb-msg"></p>
       ${escalate ? `
         <div class="yfas-fb-debug">
-          <p class="yfas-fb-debug-lead">這個問題似乎連續發生了。若持續無法使用，請協助回報，讓問題更快被修好：</p>
+          <p class="yfas-fb-debug-lead">${t("feedback.debug.lead")}</p>
           <ol class="yfas-fb-steps">
-            <li>點下方「複製診斷資訊」。</li>
-            <li>前往問題回報頁開一個新的 issue。</li>
-            <li>把剛剛複製的內容貼上，並簡述你的操作。</li>
+            <li>${t("feedback.debug.step1")}</li>
+            <li>${t("feedback.debug.step2")}</li>
+            <li>${t("feedback.debug.step3")}</li>
           </ol>
           <textarea class="yfas-fb-report" readonly rows="8"></textarea>
           <div class="yfas-fb-debug-actions">
-            <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="copy">複製診斷資訊</button>
-            <a class="yfas-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">前往問題回報頁 ↗</a>
+            <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="copy">${t("feedback.debug.copy")}</button>
+            <a class="yfas-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">${t("feedback.debug.issue")}</a>
           </div>
         </div>` : ""}
       <div class="yfas-fb-actions">
-        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="close">關閉</button>
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="close">${t("feedback.close")}</button>
       </div>`,
         });
         if (!handle)
@@ -448,7 +1152,7 @@
             addStyle(feedbackStyle, styleRef$1);
         const { overlay, close } = handle;
         // Assign text via textContent to avoid injecting untrusted strings as HTML.
-        overlay.querySelector(".yfas-fb-msg").textContent = (_a = info.userMessage) !== null && _a !== void 0 ? _a : defaultMessage;
+        overlay.querySelector(".yfas-fb-msg").textContent = (_a = info.userMessage) !== null && _a !== void 0 ? _a : t("feedback.defaultMessage");
         overlay.querySelector("[data-action='close']").addEventListener("click", close);
         if (escalate) {
             const reportEl = overlay.querySelector(".yfas-fb-report");
@@ -456,8 +1160,8 @@
             const copyBtn = overlay.querySelector("[data-action='copy']");
             copyBtn.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
                 const ok = yield copyText(report, reportEl);
-                copyBtn.textContent = ok ? "已複製 ✓" : "複製失敗，請手動選取";
-                setTimeout(() => (copyBtn.textContent = "複製診斷資訊"), 2500);
+                copyBtn.textContent = ok ? t("feedback.debug.copied") : t("feedback.debug.copyFailed");
+                setTimeout(() => (copyBtn.textContent = t("feedback.debug.copy")), 2500);
             }));
         }
         overlay.querySelector("[data-action='close']").focus();
@@ -589,7 +1293,7 @@
     const aiStudio = {
         id: "aistudio",
         label: "Google AI Studio",
-        note: "品質最佳：不限字數、可免費使用 Pro 模型；思考時間較長，但結果非常準確。適合長字幕。",
+        note: "provider.aistudio.note",
         recommended: true,
         newChatUrl: "https://aistudio.google.com/prompts/new_chat",
         hosts: ["aistudio.google.com"],
@@ -613,7 +1317,7 @@
     const gemini = {
         id: "gemini",
         label: "Gemini",
-        note: "結果品質良好，但輸入框有長度限制，較長的字幕可能無法完整貼入。",
+        note: "provider.gemini.note",
         newChatUrl: "https://gemini.google.com/app",
         hosts: ["gemini.google.com"],
         inputKind: "contenteditable",
@@ -636,7 +1340,7 @@
     const chatgpt = {
         id: "chatgpt",
         label: "ChatGPT",
-        note: "免費模型品質較弱；字幕過長時可能直接不回應。適合較短的影片。",
+        note: "provider.chatgpt.note",
         newChatUrl: "https://chatgpt.com/",
         hosts: ["chatgpt.com", "chat.openai.com"],
         inputKind: "contenteditable",
@@ -656,7 +1360,7 @@
     const claude = {
         id: "claude",
         label: "Claude",
-        note: "思考時間較長，結果偶有瑕疵。",
+        note: "provider.claude.note",
         newChatUrl: "https://claude.ai/new",
         hosts: ["claude.ai"],
         inputKind: "contenteditable",
@@ -675,7 +1379,7 @@
     const grok = {
         id: "grok",
         label: "Grok",
-        note: "品質次於 AI Studio，結果偶有小瑕疵。",
+        note: "provider.grok.note",
         newChatUrl: "https://grok.com/",
         hosts: ["grok.com"],
         inputKind: "textarea",
@@ -720,7 +1424,7 @@
                     warn(`Could not find the ${provider.label} prompt input to inject into.`);
                     void reportFailure({
                         context: `provider:${provider.id}:no-input`,
-                        userMessage: `在 ${provider.label} 找不到輸入框，可能是頁面尚未載入完成或版面改版。請重新整理頁面後再試一次。`,
+                        userMessage: t("error.noInput", provider.label),
                     });
                     return;
                 }
@@ -926,19 +1630,12 @@
     }
 
     let canCompress;
-    /** Default prompt template - also used by the settings panel's "reset" action. */
-    const defaultPromptTemplate = [
-        "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。",
-        "",
-        "影片標題：{{title}}",
-        "影片連結：{{url}}",
-        "",
-        "{{transcript}}",
-    ].join("\n");
     /** Factory so the defaults object isn't shared by reference. */
     const getDefaultConfig = () => ({
+        language: AUTO_LANG,
         provider: defaultProvider.id,
-        promptTemplate: defaultPromptTemplate,
+        // Empty = follow the interface language; the locale's default prompt is resolved at use time.
+        promptTemplate: "",
         includeTimestamps: true,
         autoSubmit: true,
         preferredLangs: "",
@@ -1130,46 +1827,55 @@
         const data = config.getData();
         const handle = openModal({
             id: overlayId,
-            label: "YFAS 設定",
+            label: t("settings.dialogLabel"),
+            // Text lives in the locale dictionaries; markup carries `data-i18n*` hooks filled by `localize()`
+            // below, so the whole panel can be re-rendered in another language without rebuilding it.
             innerHtml: `
-      <h2 class="yfas-modal-title">YouTube 摘要設定</h2>
+      <h2 class="yfas-modal-title" data-i18n="settings.title"></h2>
 
       <label class="yfas-field">
-        <span class="yfas-field-label">AI 服務</span>
-        <span class="yfas-field-hint">選擇摘要要送到哪個 AI（需先登入該服務）</span>
-        <select class="yfas-input" data-field="provider">
-          ${providers.map(p => `<option value="${p.id}">${p.label}${p.recommended ? "（推薦）" : ""}</option>`).join("")}
-        </select>
+        <span class="yfas-field-label" data-i18n="settings.provider.label"></span>
+        <span class="yfas-field-hint" data-i18n="settings.provider.hint"></span>
+        <select class="yfas-input" data-field="provider"></select>
         <span class="yfas-provider-note" data-role="provider-note"></span>
       </label>
 
       <label class="yfas-field">
-        <span class="yfas-field-label">提示詞模板</span>
-        <span class="yfas-field-hint">可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{transcript}}</code> 字幕</span>
+        <span class="yfas-field-label" data-i18n="settings.language.label"></span>
+        <span class="yfas-field-hint" data-i18n="settings.language.hint"></span>
+        <select class="yfas-input" data-field="language">
+          <option value="${AUTO_LANG}" data-i18n="settings.language.auto"></option>
+          ${supportedLanguages.map(l => `<option value="${l.code}">${l.label}</option>`).join("")}
+        </select>
+      </label>
+
+      <label class="yfas-field">
+        <span class="yfas-field-label" data-i18n="settings.prompt.label"></span>
+        <span class="yfas-field-hint" data-i18n-html="settings.prompt.hint"></span>
         <textarea class="yfas-input yfas-textarea" data-field="promptTemplate" rows="8"></textarea>
       </label>
 
       <label class="yfas-field">
-        <span class="yfas-field-label">偏好字幕語言</span>
-        <span class="yfas-field-hint">逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言</span>
-        <input type="text" class="yfas-input" data-field="preferredLangs" placeholder="留空＝自動" />
+        <span class="yfas-field-label" data-i18n="settings.langs.label"></span>
+        <span class="yfas-field-hint" data-i18n-html="settings.langs.hint"></span>
+        <input type="text" class="yfas-input" data-field="preferredLangs" data-i18n-placeholder="settings.langs.placeholder" />
       </label>
 
       <label class="yfas-check">
         <input type="checkbox" data-field="includeTimestamps" />
-        <span>字幕包含時間戳（<code>[h:mm:ss]</code>）</span>
+        <span data-i18n-html="settings.timestamps"></span>
       </label>
 
       <label class="yfas-check">
         <input type="checkbox" data-field="autoSubmit" />
-        <span>注入後自動送出</span>
+        <span data-i18n="settings.autoSubmit"></span>
       </label>
 
       <div class="yfas-actions">
-        <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="reset">重設為預設</button>
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="reset" data-i18n="settings.reset"></button>
         <span class="yfas-spacer"></span>
-        <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="cancel">取消</button>
-        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="save">儲存</button>
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="cancel" data-i18n="settings.cancel"></button>
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="save" data-i18n="settings.save"></button>
       </div>`,
         });
         if (!handle)
@@ -1179,37 +1885,80 @@
         const { overlay, close } = handle;
         const providerEl = overlay.querySelector("[data-field='provider']");
         const providerNoteEl = overlay.querySelector("[data-role='provider-note']");
+        const languageEl = overlay.querySelector("[data-field='language']");
         const promptEl = overlay.querySelector("[data-field='promptTemplate']");
         const langEl = overlay.querySelector("[data-field='preferredLangs']");
         const tsEl = overlay.querySelector("[data-field='includeTimestamps']");
         const autoEl = overlay.querySelector("[data-field='autoSubmit']");
-        // Prefill from config.
-        providerEl.value = data.provider;
-        promptEl.value = data.promptTemplate;
+        // The raw language setting the user has picked (persisted verbatim: `"auto"` or a locale code) and
+        // the concrete locale it currently resolves to (used to render the panel and provider note).
+        let selectedLangSetting = data.language;
+        let previewLang = resolveLanguage(selectedLangSetting);
+        /** Rebuilds the provider `<option>`s in `lang` (only the "(recommended)" suffix is translated). */
+        const buildProviderOptions = (lang) => {
+            const selected = providerEl.value || data.provider;
+            setInnerHtml(providerEl, providers
+                .map(p => `<option value="${p.id}">${p.label}${p.recommended ? translate(lang, "settings.provider.recommended") : ""}</option>`)
+                .join(""));
+            providerEl.value = selected;
+        };
+        /** True when the prompt box still shows a built-in default (so it should track the language). */
+        const promptIsDefault = () => promptEl.value.trim() === "" || promptEl.value.trim() === translate(previewLang, "prompt.default").trim();
+        /** Renders every translatable part of the panel in `lang` (static labels + the dynamic bits). */
+        const localize = (lang) => {
+            applyI18n(overlay, setInnerHtml, lang);
+            buildProviderOptions(lang);
+            providerNoteEl.textContent = translate(lang, getProviderById(providerEl.value).note);
+        };
+        // Prefill from config, then localize.
+        languageEl.value = selectedLangSetting;
+        promptEl.value = data.promptTemplate.trim() ? data.promptTemplate : translate(previewLang, "prompt.default");
         langEl.value = data.preferredLangs;
         tsEl.checked = data.includeTimestamps;
         autoEl.checked = data.autoSubmit;
-        // Show the selected provider's quality/limitation note, and keep it in sync with the dropdown.
-        const syncProviderNote = () => (providerNoteEl.textContent = getProviderById(providerEl.value).note);
-        syncProviderNote();
-        providerEl.addEventListener("change", syncProviderNote);
+        localize(previewLang);
+        // Keep the provider note in sync with the dropdown.
+        providerEl.addEventListener("change", () => {
+            providerNoteEl.textContent = translate(previewLang, getProviderById(providerEl.value).note);
+        });
+        // Switching the interface language re-renders the panel live. If the prompt is still an unmodified
+        // default, swap it to the newly selected language's default too (per the "auto-switch" behaviour).
+        languageEl.addEventListener("change", () => {
+            const wasDefaultPrompt = promptIsDefault();
+            selectedLangSetting = languageEl.value;
+            previewLang = resolveLanguage(selectedLangSetting);
+            localize(previewLang);
+            if (wasDefaultPrompt)
+                promptEl.value = translate(previewLang, "prompt.default");
+        });
         overlay.querySelector("[data-action='cancel']").addEventListener("click", close);
         overlay.querySelector("[data-action='reset']").addEventListener("click", () => {
             providerEl.value = defaultProvider.id;
-            syncProviderNote();
-            promptEl.value = defaultPromptTemplate;
+            selectedLangSetting = AUTO_LANG;
+            languageEl.value = AUTO_LANG;
+            previewLang = resolveLanguage(AUTO_LANG);
+            localize(previewLang);
+            promptEl.value = translate(previewLang, "prompt.default");
             langEl.value = "";
             tsEl.checked = true;
             autoEl.checked = true;
         });
         overlay.querySelector("[data-action='save']").addEventListener("click", () => {
             void config.setData({
+                language: selectedLangSetting,
                 provider: providerEl.value,
-                promptTemplate: promptEl.value,
+                // Empty = follow the language; store "" when the box still shows a built-in default.
+                promptTemplate: promptIsDefault() ? "" : promptEl.value,
                 preferredLangs: langEl.value.trim(),
                 includeTimestamps: tsEl.checked,
                 autoSubmit: autoEl.checked,
             });
+            // Apply the chosen language immediately so the rest of the page updates without a reload.
+            // `previewLang` already holds resolveLanguage(selectedLangSetting) (kept in sync above).
+            if (previewLang !== getActiveLanguage()) {
+                setActiveLanguage(previewLang);
+                window.dispatchEvent(new Event("yfas-lang-changed"));
+            }
             close();
         });
         promptEl.focus();
@@ -1569,6 +2318,26 @@ select.yfas-input {
         void ensureSummaryButton();
         // The action row is re-rendered on SPA navigation, so re-insert after each navigation.
         window.addEventListener("yt-navigate-finish", () => void ensureSummaryButton());
+        // Re-label the button in place when the user changes the interface language in settings.
+        window.addEventListener("yfas-lang-changed", relabelButton);
+    }
+    /** Re-applies the current interface language to an already-injected button (after a language change). */
+    function relabelButton() {
+        const split = document.getElementById(btnId);
+        if (!split)
+            return;
+        const mainBtn = split.querySelector(".yfas-main");
+        if (mainBtn) {
+            const textEl = mainBtn.querySelector(".ytSpecButtonShapeNextButtonTextContent");
+            if (textEl)
+                textEl.textContent = t("button.label");
+            setAvailable(mainBtn, !mainBtn.disabled); // re-applies title/aria in the new language for the current state
+        }
+        const gearBtn = split.querySelector(".yfas-settings");
+        if (gearBtn) {
+            gearBtn.title = t("button.settings");
+            gearBtn.setAttribute("aria-label", t("button.settings"));
+        }
     }
     /**
      * Polls the live DOM for the like/dislike anchor and inserts the button next to it. Polling
@@ -1603,9 +2372,9 @@ select.yfas-input {
         setInnerHtml(split, `
     <button class="yfas-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="${enabledLabel()}" aria-label="${enabledLabel()}">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${sparkleIcon}</div>
-      <div class="ytSpecButtonShapeNextButtonTextContent">摘要</div>
+      <div class="ytSpecButtonShapeNextButtonTextContent">${t("button.label")}</div>
     </button>
-    <button class="yfas-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
+    <button class="yfas-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="${t("button.settings")}" aria-label="${t("button.settings")}">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${gearIcon}</div>
     </button>`);
         const mainBtn = split.querySelector(".yfas-main");
@@ -1616,9 +2385,9 @@ select.yfas-input {
         void watchCaptionAvailability(mainBtn);
     }
     /** Default (enabled) label / tooltip for the summary button, naming the currently selected provider. */
-    const enabledLabel = () => `用 ${getProviderById(config.getData().provider).label} 摘要`;
+    const enabledLabel = () => t("button.summarizeWith", getProviderById(config.getData().provider).label);
     /** Label / tooltip shown while the button is greyed out because the video has no captions. */
-    const noCaptionsLabel = "這部影片沒有可用的字幕，無法摘要";
+    const noCaptionsLabel = () => t("button.noCaptions");
     /**
      * Greys out the summary button until captions are detected for the current video. The player
      * response can lag behind button insertion, so we poll: enable as soon as a track appears, and
@@ -1647,7 +2416,7 @@ select.yfas-input {
         mainBtn.classList.toggle("yfas-disabled", !available);
         mainBtn.disabled = !available;
         mainBtn.setAttribute("aria-disabled", String(!available));
-        const label = available ? enabledLabel() : noCaptionsLabel;
+        const label = available ? enabledLabel() : noCaptionsLabel();
         mainBtn.title = label;
         mainBtn.setAttribute("aria-label", label);
     }
@@ -1664,7 +2433,7 @@ select.yfas-input {
                     warn("No captions are available for this video.");
                     void reportFailure({
                         context: "youtube:no-captions",
-                        userMessage: "找不到這部影片的字幕／翻譯，無法摘要。請確認影片有字幕，重新整理頁面後再試一次。",
+                        userMessage: t("error.noCaptions"),
                     });
                     return;
                 }
@@ -1699,7 +2468,8 @@ select.yfas-input {
     /** Builds the final prompt by substituting the template tokens with the video's data. */
     function buildPrompt(result, template, includeTimestamps) {
         const transcript = includeTimestamps ? result.timedText : result.text;
-        return template
+        // Empty template = follow the interface language: fall back to the active locale's default prompt.
+        return (template.trim() || t("prompt.default"))
             .split("{{title}}").join(getVideoTitle())
             .split("{{url}}").join(location.href)
             .split("{{transcript}}").join(transcript);
@@ -1748,6 +2518,8 @@ select.yfas-input {
             if (location.hostname.endsWith("youtube.com"))
                 installTimedtextInterceptor();
             yield initConfig();
+            // Resolve the interface language now that the saved config (and its `language` field) is loaded.
+            initI18n(config.getData().language);
             if (domLoaded)
                 run();
             else
@@ -1783,7 +2555,7 @@ select.yfas-input {
     function registerDevCommands() {
         if (mode !== "development")
             return;
-        GM.registerMenuCommand("[dev] 清除失敗計數", () => __awaiter(this, void 0, void 0, function* () {
+        GM.registerMenuCommand(t("dev.clearFailures"), () => __awaiter(this, void 0, void 0, function* () {
             yield clearFailureCount();
             log("Failure counter cleared.");
         }));

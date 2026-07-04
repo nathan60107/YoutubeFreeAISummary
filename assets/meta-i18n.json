@@ -1,0 +1,38 @@
+{
+  "zh-TW": {
+    "name": "YouTube 免費 AI 摘要",
+    "description": "擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要"
+  },
+  "zh-CN": {
+    "name": "YouTube 免费 AI 摘要",
+    "description": "抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要"
+  },
+  "ja": {
+    "name": "YouTube 無料 AI 要約",
+    "description": "YouTube 動画ページの字幕を取得し、選んだ AI（AI Studio、Gemini、ChatGPT、Claude、Grok）にそのまま送って無料で要約します"
+  },
+  "ko": {
+    "name": "YouTube 무료 AI 요약",
+    "description": "YouTube 동영상 페이지의 자막을 가져와 선택한 AI(AI Studio, Gemini, ChatGPT, Claude, Grok)로 바로 보내 무료로 요약합니다"
+  },
+  "es": {
+    "name": "Resumen de YouTube con IA gratis",
+    "description": "Captura los subtítulos de la página de un vídeo de YouTube y los envía directamente a la IA que elijas (AI Studio, Gemini, ChatGPT, Claude o Grok) para un resumen gratis"
+  },
+  "fr": {
+    "name": "Résumé YouTube par IA gratuit",
+    "description": "Récupère les sous-titres affichés sur la page d'une vidéo YouTube et les envoie directement à l'IA de votre choix (AI Studio, Gemini, ChatGPT, Claude ou Grok) pour un résumé gratuit"
+  },
+  "de": {
+    "name": "YouTube-KI-Zusammenfassung (kostenlos)",
+    "description": "Erfasst die Untertitel auf der Seite eines YouTube-Videos und sendet sie direkt an die KI deiner Wahl (AI Studio, Gemini, ChatGPT, Claude oder Grok) für eine kostenlose Zusammenfassung"
+  },
+  "pt-BR": {
+    "name": "Resumo de YouTube com IA grátis",
+    "description": "Captura as legendas na página de um vídeo do YouTube e as envia direto para a IA que você escolher (AI Studio, Gemini, ChatGPT, Claude ou Grok) para um resumo grátis"
+  },
+  "ru": {
+    "name": "Бесплатное AI-резюме YouTube",
+    "description": "Захватывает субтитры со страницы видео на YouTube и отправляет их напрямую выбранному ИИ (AI Studio, Gemini, ChatGPT, Claude или Grok) для бесплатного резюме"
+  }
+}

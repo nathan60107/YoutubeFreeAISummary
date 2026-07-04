@@ -1,6 +1,7 @@
-import { initConfig } from "./config";
+import { config, initConfig } from "./config";
 import { buildNumber, mode, scriptInfo } from "./constants";
 import { clearFailureCount } from "./feedback";
+import { initI18n, t } from "./i18n";
 import { installTimedtextInterceptor } from "./intercept";
 import { initObservers } from "./observers";
 import { addStyle, domLoaded, error, log } from "./utils";
@@ -14,6 +15,8 @@ async function init() {
     installTimedtextInterceptor();
 
   await initConfig();
+  // Resolve the interface language now that the saved config (and its `language` field) is loaded.
+  initI18n(config.getData().language);
 
   if(domLoaded)
     run();
@@ -52,7 +55,7 @@ async function run() {
 function registerDevCommands() {
   if(mode !== "development")
     return;
-  GM.registerMenuCommand("[dev] 清除失敗計數", async () => {
+  GM.registerMenuCommand(t("dev.clearFailures"), async () => {
     await clearFailureCount();
     log("Failure counter cleared.");
   });

@@ -10,6 +10,7 @@
 
 import { reportFailure } from "./feedback";
 import { takeSummaryPayload } from "./handoff";
+import { t, type TranslationKey } from "./i18n";
 import { error, log, waitForSelector, warn } from "./utils";
 
 /**
@@ -27,10 +28,10 @@ export type SubmitShortcut = "enter" | "ctrl-enter";
 export interface AiProvider {
   /** Stable id persisted in config. Never change an existing one. */
   id: string;
-  /** Human-facing name shown in the settings dropdown and the button tooltip. */
+  /** Human-facing name shown in the settings dropdown and the button tooltip. Not translated (a brand). */
   label: string;
-  /** Short zh-TW note on this provider's quality/limitations, shown in settings when it is selected. */
-  note: string;
+  /** Translation key of this provider's quality/limitations note, shown in settings when selected. */
+  note: TranslationKey;
   /** Marks the suggested provider so the settings UI can flag it as recommended. */
   recommended?: boolean;
   /** URL opened on the YouTube side to start a fresh chat. */
@@ -61,7 +62,7 @@ export interface AiProvider {
 const aiStudio: AiProvider = {
   id: "aistudio",
   label: "Google AI Studio",
-  note: "品質最佳：不限字數、可免費使用 Pro 模型；思考時間較長，但結果非常準確。適合長字幕。",
+  note: "provider.aistudio.note",
   recommended: true,
   newChatUrl: "https://aistudio.google.com/prompts/new_chat",
   hosts: ["aistudio.google.com"],
@@ -86,7 +87,7 @@ const aiStudio: AiProvider = {
 const gemini: AiProvider = {
   id: "gemini",
   label: "Gemini",
-  note: "結果品質良好，但輸入框有長度限制，較長的字幕可能無法完整貼入。",
+  note: "provider.gemini.note",
   newChatUrl: "https://gemini.google.com/app",
   hosts: ["gemini.google.com"],
   inputKind: "contenteditable",
@@ -110,7 +111,7 @@ const gemini: AiProvider = {
 const chatgpt: AiProvider = {
   id: "chatgpt",
   label: "ChatGPT",
-  note: "免費模型品質較弱；字幕過長時可能直接不回應。適合較短的影片。",
+  note: "provider.chatgpt.note",
   newChatUrl: "https://chatgpt.com/",
   hosts: ["chatgpt.com", "chat.openai.com"],
   inputKind: "contenteditable",
@@ -131,7 +132,7 @@ const chatgpt: AiProvider = {
 const claude: AiProvider = {
   id: "claude",
   label: "Claude",
-  note: "思考時間較長，結果偶有瑕疵。",
+  note: "provider.claude.note",
   newChatUrl: "https://claude.ai/new",
   hosts: ["claude.ai"],
   inputKind: "contenteditable",
@@ -151,7 +152,7 @@ const claude: AiProvider = {
 const grok: AiProvider = {
   id: "grok",
   label: "Grok",
-  note: "品質次於 AI Studio，結果偶有小瑕疵。",
+  note: "provider.grok.note",
   newChatUrl: "https://grok.com/",
   hosts: ["grok.com"],
   inputKind: "textarea",
@@ -200,7 +201,7 @@ export async function initProviderTarget(provider: AiProvider): Promise<void> {
       warn(`Could not find the ${provider.label} prompt input to inject into.`);
       void reportFailure({
         context: `provider:${provider.id}:no-input`,
-        userMessage: `在 ${provider.label} 找不到輸入框，可能是頁面尚未載入完成或版面改版。請重新整理頁面後再試一次。`,
+        userMessage: t("error.noInput", provider.label),
       });
       return;
     }
