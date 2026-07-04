@@ -9,7 +9,7 @@ import { stashSummaryPayload } from "./handoff";
 import { gearIcon, loadingIcon, sparkleIcon } from "./icons";
 import { openSettings } from "./settings";
 import { getCurrentSubtitles, hasCaptionsAvailable, type SubtitleResult } from "./subtitles";
-import { addStyle, error, log, onInteraction, openInTab, waitForSelector, warn } from "./utils";
+import { addStyle, error, log, onInteraction, openInTab, setInnerHtml, waitForSelector, warn } from "./utils";
 
 /** Where to open Google AI Studio for a fresh chat. */
 const aiStudioUrl = "https://aistudio.google.com/prompts/new_chat";
@@ -39,7 +39,7 @@ export function initYoutube() {
  * trigger, which made the button intermittently fail to appear.
  */
 async function ensureSummaryButton() {
-  if(!location.pathname.startsWith("/watch"))
+  if(!location.pathname.startsWith("/watch") && !location.pathname.startsWith("/live/"))
     return;
   const anchor = await waitForSelector<HTMLElement>(likeDislikeSelector, 15000);
   if(anchor)
@@ -64,14 +64,14 @@ function addSummaryButton(likeDislike: HTMLElement) {
   const split = document.createElement("div");
   split.id = btnId;
   split.className = "yfswg-split";
-  split.innerHTML = `
+  setInnerHtml(split, `
     <button class="yfswg-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="用 Gemini 摘要" aria-label="用 Gemini 摘要">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${sparkleIcon}</div>
       <div class="ytSpecButtonShapeNextButtonTextContent">摘要</div>
     </button>
     <button class="yfswg-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${gearIcon}</div>
-    </button>`;
+    </button>`);
 
   const mainBtn = split.querySelector<HTMLButtonElement>(".yfswg-main")!;
   const gearBtn = split.querySelector<HTMLButtonElement>(".yfswg-settings")!;
@@ -166,7 +166,7 @@ function setBusy(btn: HTMLButtonElement, iconEl: HTMLElement | null, busy: boole
   if(!iconEl)
     return;
   iconEl.classList.toggle("yfswg-spin", busy);
-  iconEl.innerHTML = busy ? loadingIcon : sparkleIcon;
+  setInnerHtml(iconEl, busy ? loadingIcon : sparkleIcon);
 }
 
 /** Builds the final prompt by substituting the template tokens with the video's data. */

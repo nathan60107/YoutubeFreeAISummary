@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name              YoutubeFreeSummaryWithGemini
 // @namespace         https://github.com/nathan60107/YoutubeFreeSummaryWithGemini
-// @version           0.3.0
+// @version           0.4.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to Google AI Studio (Gemini) for a free summary
 // @homepageURL       https://github.com/nathan60107/YoutubeFreeSummaryWithGemini#readme
 // @supportURL        https://github.com/nathan60107/YoutubeFreeSummaryWithGemini/issues
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeSummaryWithGemini/main/assets/icon.svg?b=7394448
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeSummaryWithGemini/main/assets/icon.svg?b=6aff506
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @run-at            document-start
@@ -24,7 +24,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeSummaryWithGemini/main/assets/icon.svg?b=7394448
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeSummaryWithGemini/main/assets/icon.svg?b=6aff506
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -65,7 +65,7 @@
 
     const modeRaw = "production";
     const hostRaw = "openuserjs";
-    const buildNumberRaw = "7394448";
+    const buildNumberRaw = "6aff506";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -243,6 +243,32 @@
         });
     }
     /**
+     * A pass-through Trusted Types policy, or `undefined` when the browser has no Trusted Types.
+     * YouTube enforces `require-trusted-types-for 'script'` (observed in incognito windows), so a plain
+     * `element.innerHTML = "..."` throws a "Sink type mismatch" CSP violation. Routing HTML through this
+     * policy satisfies the enforcement; where Trusted Types is absent, assigning the raw string is
+     * already allowed. YouTube ships no `trusted-types` names allowlist, so any policy name is accepted.
+     */
+    const htmlPolicy = (() => {
+        const tt = window.trustedTypes;
+        try {
+            return tt === null || tt === void 0 ? void 0 : tt.createPolicy("yfswg", { createHTML: html => html });
+        }
+        catch (err) {
+            warn("Couldn't create Trusted Types policy; falling back to raw innerHTML:", err);
+            return undefined;
+        }
+    })();
+    /**
+     * Sets `element.innerHTML`, wrapping the HTML in a Trusted Types policy where the browser enforces
+     * Trusted Types. Use this instead of assigning `innerHTML` directly so the script keeps working
+     * under YouTube's CSP (notably in incognito windows, where the assignment otherwise throws).
+     */
+    function setInnerHtml(element, html) {
+        var _a;
+        element.innerHTML = ((_a = htmlPolicy === null || htmlPolicy === void 0 ? void 0 : htmlPolicy.createHTML(html)) !== null && _a !== void 0 ? _a : html);
+    }
+    /**
      * Adds a style element to the DOM at runtime.
      * @param css The CSS stylesheet to add
      * @param ref A reference string to identify the style element - defaults to a random 5-character string
@@ -250,8 +276,12 @@
     function addStyle(css, ref) {
         if (!domLoaded)
             throw new Error("DOM has not finished loading yet");
-        const elem = userutils.addGlobalStyle(css);
+        // Use textContent rather than a userutils helper's `innerHTML`: on a <style> element innerHTML is
+        // still a Trusted Types sink, which YouTube's CSP blocks in incognito windows. textContent isn't.
+        const elem = document.createElement("style");
+        elem.textContent = css;
         elem.id = `global-style-${ref !== null && ref !== void 0 ? ref : userutils.randomId(5, 36)}`;
+        document.head.appendChild(elem);
         return elem;
     }
 
@@ -277,7 +307,7 @@
         const overlay = document.createElement("div");
         overlay.id = opts.id;
         overlay.className = "yfswg-modal-overlay";
-        overlay.innerHTML = `<div class="yfswg-modal-box" role="${(_a = opts.role) !== null && _a !== void 0 ? _a : "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`;
+        setInnerHtml(overlay, `<div class="yfswg-modal-box" role="${(_a = opts.role) !== null && _a !== void 0 ? _a : "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`);
         const modal = overlay.querySelector(".yfswg-modal-box");
         const close = () => {
             overlay.remove();
@@ -1163,7 +1193,7 @@
      */
     function ensureSummaryButton() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!location.pathname.startsWith("/watch"))
+            if (!location.pathname.startsWith("/watch") && !location.pathname.startsWith("/live/"))
                 return;
             const anchor = yield waitForSelector(likeDislikeSelector, 15000);
             if (anchor)
@@ -1186,14 +1216,14 @@
         const split = document.createElement("div");
         split.id = btnId;
         split.className = "yfswg-split";
-        split.innerHTML = `
+        setInnerHtml(split, `
     <button class="yfswg-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="用 Gemini 摘要" aria-label="用 Gemini 摘要">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${sparkleIcon}</div>
       <div class="ytSpecButtonShapeNextButtonTextContent">摘要</div>
     </button>
     <button class="yfswg-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${gearIcon}</div>
-    </button>`;
+    </button>`);
         const mainBtn = split.querySelector(".yfswg-main");
         const gearBtn = split.querySelector(".yfswg-settings");
         onInteraction(mainBtn, () => void onSummaryClick(mainBtn));
@@ -1280,7 +1310,7 @@
         if (!iconEl)
             return;
         iconEl.classList.toggle("yfswg-spin", busy);
-        iconEl.innerHTML = busy ? loadingIcon : sparkleIcon;
+        setInnerHtml(iconEl, busy ? loadingIcon : sparkleIcon);
     }
     /** Builds the final prompt by substituting the template tokens with the video's data. */
     function buildPrompt(result, template, includeTimestamps) {

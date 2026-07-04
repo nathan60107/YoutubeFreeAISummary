@@ -5,7 +5,7 @@
  * own controls, and add any content-specific styles of their own.
  */
 
-import { addStyle } from "./utils";
+import { addStyle, setInnerHtml } from "./utils";
 
 /** Ref/id used for the shared base stylesheet, injected once. */
 const styleRef = "yfswg-modal";
@@ -45,7 +45,7 @@ export function openModal(opts: ModalOptions): ModalHandle | null {
   const overlay = document.createElement("div");
   overlay.id = opts.id;
   overlay.className = "yfswg-modal-overlay";
-  overlay.innerHTML = `<div class="yfswg-modal-box" role="${opts.role ?? "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`;
+  setInnerHtml(overlay, `<div class="yfswg-modal-box" role="${opts.role ?? "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`);
 
   const modal = overlay.querySelector<HTMLElement>(".yfswg-modal-box")!;
 

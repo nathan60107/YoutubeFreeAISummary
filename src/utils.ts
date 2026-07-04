@@ -1,4 +1,4 @@
-import { addGlobalStyle, openInNewTab, randomId, type LooseUnion } from "@sv443-network/userutils";
+import { openInNewTab, randomId, type LooseUnion } from "@sv443-network/userutils";
 import type resources from "../assets/resources.json";
 
 //#region logging
@@ -153,6 +153,41 @@ export function waitForSelector<T extends Element>(selector: string, timeoutMs =
   });
 }
 
+/**
+ * Minimal shape of the Trusted Types API we depend on. `@types/trusted-types` isn't installed and
+ * we only ever touch `createPolicy` and the returned policy's `createHTML`.
+ */
+interface TrustedTypesLike {
+  createPolicy(name: string, rules: { createHTML: (html: string) => string }): { createHTML: (html: string) => string };
+}
+
+/**
+ * A pass-through Trusted Types policy, or `undefined` when the browser has no Trusted Types.
+ * YouTube enforces `require-trusted-types-for 'script'` (observed in incognito windows), so a plain
+ * `element.innerHTML = "..."` throws a "Sink type mismatch" CSP violation. Routing HTML through this
+ * policy satisfies the enforcement; where Trusted Types is absent, assigning the raw string is
+ * already allowed. YouTube ships no `trusted-types` names allowlist, so any policy name is accepted.
+ */
+const htmlPolicy = (() => {
+  const tt = (window as unknown as { trustedTypes?: TrustedTypesLike }).trustedTypes;
+  try {
+    return tt?.createPolicy("yfswg", { createHTML: html => html });
+  }
+  catch(err) {
+    warn("Couldn't create Trusted Types policy; falling back to raw innerHTML:", err);
+    return undefined;
+  }
+})();
+
+/**
+ * Sets `element.innerHTML`, wrapping the HTML in a Trusted Types policy where the browser enforces
+ * Trusted Types. Use this instead of assigning `innerHTML` directly so the script keeps working
+ * under YouTube's CSP (notably in incognito windows, where the assignment otherwise throws).
+ */
+export function setInnerHtml(element: Element, html: string) {
+  element.innerHTML = (htmlPolicy?.createHTML(html) ?? html) as string;
+}
+
 /** Removes all child nodes of an element without invoking the slow-ish HTML parser */
 export function clearInner(element: Element) {
   while(element.hasChildNodes())
@@ -173,7 +208,11 @@ function clearNode(element: Element) {
 export function addStyle(css: string, ref?: string) {
   if(!domLoaded)
     throw new Error("DOM has not finished loading yet");
-  const elem = addGlobalStyle(css);
+  // Use textContent rather than a userutils helper's `innerHTML`: on a <style> element innerHTML is
+  // still a Trusted Types sink, which YouTube's CSP blocks in incognito windows. textContent isn't.
+  const elem = document.createElement("style");
+  elem.textContent = css;
   elem.id = `global-style-${ref ?? randomId(5, 36)}`;
+  document.head.appendChild(elem);
   return elem;
 }
