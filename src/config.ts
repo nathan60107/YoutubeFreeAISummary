@@ -1,5 +1,6 @@
 import { DataStore, compress, decompress } from "@sv443-network/userutils";
 import { compressionFormat } from "./constants";
+import { defaultProvider } from "./providers";
 import type { ScriptConfig } from "./types";
 
 let canCompress: boolean | undefined;
@@ -16,6 +17,7 @@ export const defaultPromptTemplate = [
 
 /** Factory so the defaults object isn't shared by reference. */
 export const getDefaultConfig = (): ScriptConfig => ({
+  provider: defaultProvider.id,
   promptTemplate: defaultPromptTemplate,
   includeTimestamps: true,
   autoSubmit: true,

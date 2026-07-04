@@ -1,27 +1,27 @@
-# YouTube Free Summary with Gemini
+# YouTube Free AI Summary
 
 [![en](https://img.shields.io/badge/lang-en-red.svg)](README.md)
 [![zh-TW](https://img.shields.io/badge/lang-zh--TW-green.svg)](README.zh-TW.md)
 
 ---
 
-**YouTube Free Summary with Gemini** 是一款 Tampermonkey / Violentmonkey userscript，會在 YouTube 上增加一個按鈕，擷取目前影片的字幕，並直接丟進新開的 Google AI Studio（Gemini）分頁，讓你立刻進行總結。
+**YouTube Free AI Summary** 是一款 Tampermonkey / Violentmonkey userscript，會在 YouTube 上增加一個按鈕，擷取目前影片的字幕，並直接丟進新開的 AI 對話分頁——可自由選擇 Google AI Studio、Gemini、ChatGPT、Claude 或 Grok——讓你立刻進行總結。
 
 它專門解決其他總結腳本會遇到的兩個問題：無法從頁面外部抓到的字幕，以及因為把字幕夾帶在網址中而被截斷的提詞。
 
 ## 功能特色
 
 - **擷取頁面字幕** — 直接讀取頁面當下已經取得的字幕，而不是從外部 API 抓取，因此在外部工具無法存取的受限、會員專屬或地區限定影片上依然可用
-- **沒有字數上限** — 將字幕直接交給 AI Studio，而非透過網址參數傳遞，避免其他腳本會遇到的字數截斷問題
-- **完全免費** — 不需要 API 金鑰、也不需要付費服務，你只需要登入 Google AI Studio
-- **一鍵完成** — 在 YouTube 播放頁面加上一個按鈕，按下後即可擷取字幕並為你開啟 AI Studio
+- **可選擇 AI 服務** — 可將字幕送到你偏好的 AI：Google AI Studio、Gemini、ChatGPT、Claude 或 Grok，於設定視窗中挑選
+- **沒有字數上限** — 將字幕直接填入 AI 的輸入框，而非透過網址參數傳遞，避免其他腳本會遇到的字數截斷問題
+- **完全免費** — 不需要 API 金鑰、也不需要付費服務，你只需要登入所選的 AI 服務
+- **一鍵完成** — 在 YouTube 播放頁面加上一個按鈕，按下後即可擷取字幕並為你開啟所選的 AI
 
 ## 開發藍圖
 
 規劃中的功能與修復：
 
 - **多語系支援** — 介面多國語言化
-- **選擇 AI 服務** — 可改用其他 AI 工具（例如 ChatGPT、Claude），而非只限 Google AI Studio
 - **在觀看頁面外摘要** — 不需開啟完整播放頁即可觸發摘要（例如從縮圖或影片列表）
 - **擴充元件版本** — 除了 userscript，另提供打包的瀏覽器擴充功能
 

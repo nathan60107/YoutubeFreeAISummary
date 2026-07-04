@@ -1,9 +1,9 @@
 /**
- * Shared failure feedback used by both the YouTube and AI Studio sides.
+ * Shared failure feedback used by both the YouTube and AI provider sides.
  *
  * On a failure we show a modal telling the user to refresh and retry. Failure timestamps are
  * persisted (via GM storage, shared across tabs) so that if the user hits two failures within
- * five minutes — even across a page refresh or across the YouTube/AI Studio tabs — the modal
+ * five minutes — even across a page refresh or across the YouTube/AI provider tabs — the modal
  * escalates to include a copyable debug report and a prompt to file a GitHub issue.
  */
 
@@ -12,7 +12,7 @@ import { openModal } from "./modal";
 import { addStyle, getRecentLogs } from "./utils";
 
 /** GM storage key holding the recent failure timestamps (JSON array of epoch ms). */
-const failuresKey = "yfswg-recent-failures";
+const failuresKey = "yfas-recent-failures";
 /** Sliding window within which repeated failures escalate the modal. */
 const failureWindowMs = 5 * 60_000;
 /** Number of failures within the window that triggers the debug-report escalation. */
@@ -21,8 +21,8 @@ const escalateThreshold = 2;
 /** GitHub issues page users are directed to when reporting a persistent problem. */
 const issuesUrl = `https://github.com/${repo}/issues/new`;
 
-const overlayId = "yfswg-feedback-overlay";
-const styleRef = "yfswg-feedback";
+const overlayId = "yfas-feedback-overlay";
+const styleRef = "yfas-feedback";
 
 /** Options describing a failure to surface to the user. */
 export interface FailureInfo {
@@ -72,7 +72,7 @@ function buildDebugReport(context: string): string {
   const logs = getRecentLogs();
 
   return [
-    "### YFSWG debug report",
+    "### YFAS debug report",
     `time: ${new Date().toISOString()}`,
     `context: ${context}`,
     "",
@@ -107,24 +107,24 @@ function showModal(info: FailureInfo, escalate: boolean): void {
     label: "摘要失敗",
     role: "alertdialog",
     innerHtml: `
-      <h2 class="yfswg-modal-title">摘要失敗</h2>
-      <p class="yfswg-fb-msg"></p>
+      <h2 class="yfas-modal-title">摘要失敗</h2>
+      <p class="yfas-fb-msg"></p>
       ${escalate ? `
-        <div class="yfswg-fb-debug">
-          <p class="yfswg-fb-debug-lead">這個問題似乎連續發生了。若持續無法使用，請協助回報，讓問題更快被修好：</p>
-          <ol class="yfswg-fb-steps">
+        <div class="yfas-fb-debug">
+          <p class="yfas-fb-debug-lead">這個問題似乎連續發生了。若持續無法使用，請協助回報，讓問題更快被修好：</p>
+          <ol class="yfas-fb-steps">
             <li>點下方「複製診斷資訊」。</li>
             <li>前往問題回報頁開一個新的 issue。</li>
             <li>把剛剛複製的內容貼上，並簡述你的操作。</li>
           </ol>
-          <textarea class="yfswg-fb-report" readonly rows="8"></textarea>
-          <div class="yfswg-fb-debug-actions">
-            <button type="button" class="yfswg-modal-btn yfswg-modal-btn--secondary" data-action="copy">複製診斷資訊</button>
-            <a class="yfswg-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">前往問題回報頁 ↗</a>
+          <textarea class="yfas-fb-report" readonly rows="8"></textarea>
+          <div class="yfas-fb-debug-actions">
+            <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="copy">複製診斷資訊</button>
+            <a class="yfas-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">前往問題回報頁 ↗</a>
           </div>
         </div>` : ""}
-      <div class="yfswg-fb-actions">
-        <button type="button" class="yfswg-modal-btn yfswg-modal-btn--primary" data-action="close">關閉</button>
+      <div class="yfas-fb-actions">
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="close">關閉</button>
       </div>`,
   });
   if(!handle)
@@ -136,11 +136,11 @@ function showModal(info: FailureInfo, escalate: boolean): void {
   const { overlay, close } = handle;
 
   // Assign text via textContent to avoid injecting untrusted strings as HTML.
-  overlay.querySelector<HTMLElement>(".yfswg-fb-msg")!.textContent = info.userMessage ?? defaultMessage;
+  overlay.querySelector<HTMLElement>(".yfas-fb-msg")!.textContent = info.userMessage ?? defaultMessage;
   overlay.querySelector("[data-action='close']")!.addEventListener("click", close);
 
   if(escalate) {
-    const reportEl = overlay.querySelector<HTMLTextAreaElement>(".yfswg-fb-report")!;
+    const reportEl = overlay.querySelector<HTMLTextAreaElement>(".yfas-fb-report")!;
     reportEl.value = report;
     const copyBtn = overlay.querySelector<HTMLButtonElement>("[data-action='copy']")!;
     copyBtn.addEventListener("click", async () => {
@@ -175,28 +175,28 @@ async function copyText(text: string, textarea: HTMLTextAreaElement): Promise<bo
 }
 
 const feedbackStyle = `
-.yfswg-fb-msg {
+.yfas-fb-msg {
   margin: 0 0 8px;
   font-size: 1.4rem;
   line-height: 1.5;
 }
-.yfswg-fb-debug {
+.yfas-fb-debug {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--yt-spec-10-percent-layer, rgba(0, 0, 0, 0.15));
 }
-.yfswg-fb-debug-lead {
+.yfas-fb-debug-lead {
   margin: 0 0 8px;
   font-size: 1.3rem;
   line-height: 1.5;
 }
-.yfswg-fb-steps {
+.yfas-fb-steps {
   margin: 0 0 12px;
   padding-left: 20px;
   font-size: 1.3rem;
   line-height: 1.6;
 }
-.yfswg-fb-report {
+.yfas-fb-report {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
@@ -210,21 +210,21 @@ const feedbackStyle = `
   color: inherit;
   white-space: pre;
 }
-.yfswg-fb-debug-actions {
+.yfas-fb-debug-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-top: 10px;
 }
-.yfswg-fb-issue {
+.yfas-fb-issue {
   font-size: 1.3rem;
   color: var(--yt-spec-call-to-action, #065fd4);
   text-decoration: none;
 }
-.yfswg-fb-issue:hover {
+.yfas-fb-issue:hover {
   text-decoration: underline;
 }
-.yfswg-fb-actions {
+.yfas-fb-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;

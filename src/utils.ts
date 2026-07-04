@@ -4,7 +4,7 @@ import type resources from "../assets/resources.json";
 //#region logging
 
 /** Shared console prefix so every log is filterable and never lost behind a missing tag. */
-const logPrefix = "[YFSWG]";
+const logPrefix = "[YFAS]";
 
 /** Log severity levels captured into the in-memory buffer. */
 type LogLevel = "log" | "warn" | "error";
@@ -171,7 +171,7 @@ interface TrustedTypesLike {
 const htmlPolicy = (() => {
   const tt = (window as unknown as { trustedTypes?: TrustedTypesLike }).trustedTypes;
   try {
-    return tt?.createPolicy("yfswg", { createHTML: html => html });
+    return tt?.createPolicy("yfas", { createHTML: html => html });
   }
   catch(err) {
     warn("Couldn't create Trusted Types policy; falling back to raw innerHTML:", err);

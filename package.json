@@ -1,8 +1,8 @@
 {
-  "name": "youtube-free-summary-with-gemini",
-  "userscriptName": "YoutubeFreeSummaryWithGemini",
-  "version": "0.4.0",
-  "description": "Capture a YouTube video's on-page subtitles and send them straight to Google AI Studio (Gemini) for a free summary",
+  "name": "youtube-free-ai-summary",
+  "userscriptName": "YoutubeFreeAISummary",
+  "version": "0.5.0",
+  "description": "Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nathan60107/YoutubeFreeSummaryWithGemini.git"
+    "url": "git+https://github.com/nathan60107/YoutubeFreeAISummary.git"
   },
   "author": {
     "name": "nathan60107",
@@ -32,9 +32,9 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nathan60107/YoutubeFreeSummaryWithGemini/issues"
+    "url": "https://github.com/nathan60107/YoutubeFreeAISummary/issues"
   },
-  "homepage": "https://github.com/nathan60107/YoutubeFreeSummaryWithGemini",
+  "homepage": "https://github.com/nathan60107/YoutubeFreeAISummary",
   "devDependencies": {
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",

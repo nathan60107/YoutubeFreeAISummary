@@ -1,21 +1,19 @@
 /**
- * YouTube-side logic: injects the "Summarize with Gemini" button into the watch page's
- * action row (next to Share / Save) and triggers subtitle capture when clicked.
+ * YouTube-side logic: injects the summary button into the watch page's action row
+ * (next to Share / Save) and triggers subtitle capture when clicked.
  */
 
 import { config } from "./config";
 import { reportFailure } from "./feedback";
 import { stashSummaryPayload } from "./handoff";
 import { gearIcon, loadingIcon, sparkleIcon } from "./icons";
+import { getProviderById } from "./providers";
 import { openSettings } from "./settings";
 import { getCurrentSubtitles, hasCaptionsAvailable, type SubtitleResult } from "./subtitles";
 import { addStyle, error, log, onInteraction, openInTab, setInnerHtml, waitForSelector, warn } from "./utils";
 
-/** Where to open Google AI Studio for a fresh chat. */
-const aiStudioUrl = "https://aistudio.google.com/prompts/new_chat";
-
 /** id of the injected button, used to avoid inserting duplicates. */
-const btnId = "yfswg-summary-btn";
+const btnId = "yfas-summary-btn";
 
 /**
  * The like/dislike segmented button. We anchor to this element (rather than the action-row
@@ -26,7 +24,7 @@ const likeDislikeSelector = "ytd-watch-metadata segmented-like-dislike-button-vi
 
 /** Registers the button injection. Call once on the YouTube side after DOM load. */
 export function initYoutube() {
-  addStyle(buttonStyle, "yfswg-button");
+  addStyle(buttonStyle, "yfas-button");
 
   void ensureSummaryButton();
   // The action row is re-rendered on SPA navigation, so re-insert after each navigation.
@@ -63,18 +61,18 @@ function addSummaryButton(likeDislike: HTMLElement) {
 
   const split = document.createElement("div");
   split.id = btnId;
-  split.className = "yfswg-split";
+  split.className = "yfas-split";
   setInnerHtml(split, `
-    <button class="yfswg-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="用 Gemini 摘要" aria-label="用 Gemini 摘要">
+    <button class="yfas-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="${enabledLabel()}" aria-label="${enabledLabel()}">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${sparkleIcon}</div>
       <div class="ytSpecButtonShapeNextButtonTextContent">摘要</div>
     </button>
-    <button class="yfswg-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
+    <button class="yfas-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${gearIcon}</div>
     </button>`);
 
-  const mainBtn = split.querySelector<HTMLButtonElement>(".yfswg-main")!;
-  const gearBtn = split.querySelector<HTMLButtonElement>(".yfswg-settings")!;
+  const mainBtn = split.querySelector<HTMLButtonElement>(".yfas-main")!;
+  const gearBtn = split.querySelector<HTMLButtonElement>(".yfas-settings")!;
   onInteraction(mainBtn, () => void onSummaryClick(mainBtn));
   onInteraction(gearBtn, () => openSettings());
 
@@ -82,8 +80,8 @@ function addSummaryButton(likeDislike: HTMLElement) {
   void watchCaptionAvailability(mainBtn);
 }
 
-/** Default (enabled) label / tooltip for the summary button. */
-const mainBtnLabel = "用 Gemini 摘要";
+/** Default (enabled) label / tooltip for the summary button, naming the currently selected provider. */
+const enabledLabel = () => `用 ${getProviderById(config.getData().provider).label} 摘要`;
 /** Label / tooltip shown while the button is greyed out because the video has no captions. */
 const noCaptionsLabel = "這部影片沒有可用的字幕，無法摘要";
 
@@ -111,10 +109,10 @@ async function watchCaptionAvailability(mainBtn: HTMLButtonElement, timeoutMs = 
  * assistive tech.
  */
 function setAvailable(mainBtn: HTMLButtonElement, available: boolean) {
-  mainBtn.classList.toggle("yfswg-disabled", !available);
+  mainBtn.classList.toggle("yfas-disabled", !available);
   mainBtn.disabled = !available;
   mainBtn.setAttribute("aria-disabled", String(!available));
-  const label = available ? mainBtnLabel : noCaptionsLabel;
+  const label = available ? enabledLabel() : noCaptionsLabel;
   mainBtn.title = label;
   mainBtn.setAttribute("aria-label", label);
 }
@@ -148,7 +146,7 @@ async function onSummaryClick(btn: HTMLButtonElement) {
       title: getVideoTitle(),
       createdAt: Date.now(),
     });
-    openInTab(aiStudioUrl, false); // foreground the AI Studio tab
+    openInTab(getProviderById(cfg.provider).newChatUrl, false); // foreground the AI provider tab
     // Success: restore silently (handled in finally), no extra indicator.
   }
   catch(err) {
@@ -162,10 +160,10 @@ async function onSummaryClick(btn: HTMLButtonElement) {
 
 /** Toggles the button's busy state: dims it and swaps the sparkle icon for the spinner (or back). */
 function setBusy(btn: HTMLButtonElement, iconEl: HTMLElement | null, busy: boolean) {
-  btn.classList.toggle("yfswg-busy", busy);
+  btn.classList.toggle("yfas-busy", busy);
   if(!iconEl)
     return;
-  iconEl.classList.toggle("yfswg-spin", busy);
+  iconEl.classList.toggle("yfas-spin", busy);
   setInnerHtml(iconEl, busy ? loadingIcon : sparkleIcon);
 }
 
@@ -187,30 +185,30 @@ function getVideoTitle(): string {
 }
 
 const buttonStyle = `
-.yfswg-split {
+.yfas-split {
   display: inline-flex;
   align-items: center;
   gap: 1px;
   margin-right: 8px;
   vertical-align: middle;
 }
-.yfswg-split .ytSpecButtonShapeNextIcon svg {
+.yfas-split .ytSpecButtonShapeNextIcon svg {
   width: 100%;
   height: 100%;
   display: block;
 }
-.yfswg-main.yfswg-busy {
+.yfas-main.yfas-busy {
   opacity: 0.6;
   pointer-events: none;
 }
-.yfswg-main.yfswg-disabled {
+.yfas-main.yfas-disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.yfswg-split .ytSpecButtonShapeNextIcon.yfswg-spin {
-  animation: yfswg-spin 0.8s linear infinite;
+.yfas-split .ytSpecButtonShapeNextIcon.yfas-spin {
+  animation: yfas-spin 0.8s linear infinite;
 }
-@keyframes yfswg-spin {
+@keyframes yfas-spin {
   to { transform: rotate(360deg); }
 }
 `;

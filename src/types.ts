@@ -10,13 +10,19 @@ export type RollupArgs = Partial<{
 /** Configuration object for the script (persisted via the config DataStore). */
 export type ScriptConfig = {
   /**
-   * The prompt sent to AI Studio. Supports the tokens `{{title}}`, `{{url}}`, `{{transcript}}`,
-   * which are replaced with the video's title, URL, and captured subtitles respectively.
+   * Which AI provider to hand the transcript off to. One of the {@linkcode AiProvider} ids from
+   * `providers.ts` (e.g. `"aistudio"`, `"gemini"`, `"chatgpt"`, `"claude"`, `"grok"`). An unknown
+   * id falls back to the default provider at runtime.
+   */
+  provider: string;
+  /**
+   * The prompt sent to the chosen AI provider. Supports the tokens `{{title}}`, `{{url}}`,
+   * `{{transcript}}`, which are replaced with the video's title, URL, and captured subtitles.
    */
   promptTemplate: string;
   /** Whether `{{transcript}}` uses timestamped lines (`[h:mm:ss] text`) or plain text. */
   includeTimestamps: boolean;
-  /** Whether to automatically press Run in AI Studio after injecting the prompt. */
+  /** Whether to automatically submit the prompt in the AI provider after injecting it. */
   autoSubmit: boolean;
   /**
    * Comma-separated preferred subtitle language codes (e.g. "zh-TW, ja, en"). The first available
@@ -25,11 +31,11 @@ export type ScriptConfig = {
   preferredLangs: string;
 };
 
-/** Data handed off from the YouTube tab to the AI Studio tab via GM storage. */
+/** Data handed off from the YouTube tab to the AI provider tab via GM storage. */
 export type SummaryPayload = {
   /** The fully built prompt (template with tokens already substituted), ready to inject. */
   prompt: string;
-  /** Whether the AI Studio tab should auto-press Run after injecting. */
+  /** Whether the AI provider tab should auto-submit after injecting. */
   autoSubmit: boolean;
   /** Video title, kept for logging/diagnostics. */
   title: string;

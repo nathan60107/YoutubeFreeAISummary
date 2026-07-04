@@ -1,19 +1,24 @@
 // ==UserScript==
-// @name              YoutubeFreeSummaryWithGemini
-// @namespace         https://github.com/nathan60107/YoutubeFreeSummaryWithGemini
-// @version           0.4.0
-// @description       Capture a YouTube video's on-page subtitles and send them straight to Google AI Studio (Gemini) for a free summary
-// @homepageURL       https://github.com/nathan60107/YoutubeFreeSummaryWithGemini#readme
-// @supportURL        https://github.com/nathan60107/YoutubeFreeSummaryWithGemini/issues
+// @name              YoutubeFreeAISummary
+// @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
+// @version           0.5.0
+// @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
+// @homepageURL       https://github.com/nathan60107/YoutubeFreeAISummary#readme
+// @supportURL        https://github.com/nathan60107/YoutubeFreeAISummary/issues
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeSummaryWithGemini/main/assets/icon.svg?b=6aff506
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=1e94c46
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
+// @match             *://gemini.google.com/*
+// @match             *://chatgpt.com/*
+// @match             *://chat.openai.com/*
+// @match             *://claude.ai/*
+// @match             *://grok.com/*
 // @run-at            document-start
-// @downloadURL       https://openuserjs.org/install/nathan60107/YoutubeFreeSummaryWithGemini
-// @updateURL         https://openuserjs.org/install/nathan60107/YoutubeFreeSummaryWithGemini
+// @downloadURL       https://update.greasyfork.org/scripts/#REPLACE:greasyfork_script_id/YoutubeFreeAISummary_gf.user.js
+// @updateURL         https://update.greasyfork.org/scripts/#REPLACE:greasyfork_script_id/YoutubeFreeAISummary_gf.user.js
 // @connect           github.com
 // @connect           raw.githubusercontent.com
 // @grant             GM.getValue
@@ -24,7 +29,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeSummaryWithGemini/main/assets/icon.svg?b=6aff506
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=1e94c46
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -64,12 +69,12 @@
     };
 
     const modeRaw = "production";
-    const hostRaw = "openuserjs";
-    const buildNumberRaw = "6aff506";
+    const hostRaw = "greasyfork";
+    const buildNumberRaw = "1e94c46";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
-    const repo = "nathan60107/YoutubeFreeSummaryWithGemini";
+    const repo = "nathan60107/YoutubeFreeAISummary";
     /** Which host the userscript was installed from */
     const host = (hostRaw.match(/^#{{.+}}$/) ? "github" : hostRaw);
     /** The build number of the userscript */
@@ -102,61 +107,9 @@
         namespace: GM.info.script.namespace,
     };
 
-    let canCompress;
-    /** Default prompt template - also used by the settings panel's "reset" action. */
-    const defaultPromptTemplate = [
-        "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。",
-        "",
-        "影片標題：{{title}}",
-        "影片連結：{{url}}",
-        "",
-        "{{transcript}}",
-    ].join("\n");
-    /** Factory so the defaults object isn't shared by reference. */
-    const getDefaultConfig = () => ({
-        promptTemplate: defaultPromptTemplate,
-        includeTimestamps: true,
-        autoSubmit: true,
-        preferredLangs: "",
-    });
-    const config = new userutils.DataStore({
-        id: "script-config",
-        defaultData: getDefaultConfig(),
-        // increment this value if the data format changes:
-        formatVersion: 1,
-        // functions that migrate data from older versions to newer ones:
-        migrations: {
-        // migrate from v1 to v2:
-        // 2: (oldData) => {
-        //   return { ...oldData, newProp: "foo" };
-        // },
-        },
-        encodeData: (data) => canCompress ? userutils.compress(data, compressionFormat, "string") : data,
-        decodeData: (data) => canCompress ? userutils.decompress(data, compressionFormat, "string") : data,
-    });
-    function initConfig() {
-        return __awaiter(this, void 0, void 0, function* () {
-            canCompress = yield compressionSupported();
-            yield config.loadData();
-        });
-    }
-    function compressionSupported() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (typeof canCompress === "boolean")
-                return canCompress;
-            try {
-                yield userutils.compress(".", compressionFormat, "string");
-                return canCompress = true;
-            }
-            catch (e) {
-                return canCompress = false;
-            }
-        });
-    }
-
     //#region logging
     /** Shared console prefix so every log is filterable and never lost behind a missing tag. */
-    const logPrefix = "[YFSWG]";
+    const logPrefix = "[YFAS]";
     /**
      * In-memory ring buffer of the most recent log lines from all three streams. Kept in RAM only
      * (never persisted) so a debug report can include recent history without touching storage.
@@ -252,7 +205,7 @@
     const htmlPolicy = (() => {
         const tt = window.trustedTypes;
         try {
-            return tt === null || tt === void 0 ? void 0 : tt.createPolicy("yfswg", { createHTML: html => html });
+            return tt === null || tt === void 0 ? void 0 : tt.createPolicy("yfas", { createHTML: html => html });
         }
         catch (err) {
             warn("Couldn't create Trusted Types policy; falling back to raw innerHTML:", err);
@@ -292,7 +245,7 @@
      * own controls, and add any content-specific styles of their own.
      */
     /** Ref/id used for the shared base stylesheet, injected once. */
-    const styleRef$2 = "yfswg-modal";
+    const styleRef$2 = "yfas-modal";
     /**
      * Opens a modal using the shared scaffold and returns a {@linkcode ModalHandle}, or `null` if a
      * modal with the same `id` is already open (so the caller can early-return). The dialog closes on
@@ -306,9 +259,9 @@
             addStyle(modalStyle, styleRef$2);
         const overlay = document.createElement("div");
         overlay.id = opts.id;
-        overlay.className = "yfswg-modal-overlay";
-        setInnerHtml(overlay, `<div class="yfswg-modal-box" role="${(_a = opts.role) !== null && _a !== void 0 ? _a : "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`);
-        const modal = overlay.querySelector(".yfswg-modal-box");
+        overlay.className = "yfas-modal-overlay";
+        setInnerHtml(overlay, `<div class="yfas-modal-box" role="${(_a = opts.role) !== null && _a !== void 0 ? _a : "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`);
+        const modal = overlay.querySelector(".yfas-modal-box");
         const close = () => {
             overlay.remove();
             document.removeEventListener("keydown", onKeydown);
@@ -327,7 +280,7 @@
         return { overlay, modal, close };
     }
     const modalStyle = `
-.yfswg-modal-overlay {
+.yfas-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 2147483000;
@@ -337,7 +290,7 @@
   background: rgba(0, 0, 0, 0.6);
   font-family: "Roboto", "Arial", sans-serif;
 }
-.yfswg-modal-box {
+.yfas-modal-box {
   width: min(560px, 92vw);
   max-height: 88vh;
   overflow-y: auto;
@@ -348,12 +301,12 @@
   color: var(--yt-spec-text-primary, #0f0f0f);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
-.yfswg-modal-title {
+.yfas-modal-title {
   margin: 0 0 16px;
   font-size: 1.8rem;
   font-weight: 500;
 }
-.yfswg-modal-btn {
+.yfas-modal-btn {
   padding: 8px 16px;
   font-size: 1.4rem;
   font-weight: 500;
@@ -362,37 +315,37 @@
   border: none;
   cursor: pointer;
 }
-.yfswg-modal-btn--primary {
+.yfas-modal-btn--primary {
   background: var(--yt-spec-call-to-action, #065fd4);
   color: #fff;
 }
-.yfswg-modal-btn--secondary {
+.yfas-modal-btn--secondary {
   background: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.08));
   color: inherit;
 }
-.yfswg-modal-btn:hover {
+.yfas-modal-btn:hover {
   filter: brightness(1.1);
 }
 `;
 
     /**
-     * Shared failure feedback used by both the YouTube and AI Studio sides.
+     * Shared failure feedback used by both the YouTube and AI provider sides.
      *
      * On a failure we show a modal telling the user to refresh and retry. Failure timestamps are
      * persisted (via GM storage, shared across tabs) so that if the user hits two failures within
-     * five minutes — even across a page refresh or across the YouTube/AI Studio tabs — the modal
+     * five minutes — even across a page refresh or across the YouTube/AI provider tabs — the modal
      * escalates to include a copyable debug report and a prompt to file a GitHub issue.
      */
     /** GM storage key holding the recent failure timestamps (JSON array of epoch ms). */
-    const failuresKey = "yfswg-recent-failures";
+    const failuresKey = "yfas-recent-failures";
     /** Sliding window within which repeated failures escalate the modal. */
     const failureWindowMs = 5 * 60000;
     /** Number of failures within the window that triggers the debug-report escalation. */
     const escalateThreshold = 2;
     /** GitHub issues page users are directed to when reporting a persistent problem. */
     const issuesUrl = `https://github.com/${repo}/issues/new`;
-    const overlayId$1 = "yfswg-feedback-overlay";
-    const styleRef$1 = "yfswg-feedback";
+    const overlayId$1 = "yfas-feedback-overlay";
+    const styleRef$1 = "yfas-feedback";
     /**
      * Records the failure and shows the feedback modal, escalating to a debug report if this is the
      * {@linkcode escalateThreshold}-th failure within {@linkcode failureWindowMs}.
@@ -436,7 +389,7 @@
         const langs = Array.isArray(navigator.languages) ? navigator.languages.join(", ") : navigator.language;
         const logs = getRecentLogs();
         return [
-            "### YFSWG debug report",
+            "### YFAS debug report",
             `time: ${new Date().toISOString()}`,
             `context: ${context}`,
             "",
@@ -469,24 +422,24 @@
             label: "摘要失敗",
             role: "alertdialog",
             innerHtml: `
-      <h2 class="yfswg-modal-title">摘要失敗</h2>
-      <p class="yfswg-fb-msg"></p>
+      <h2 class="yfas-modal-title">摘要失敗</h2>
+      <p class="yfas-fb-msg"></p>
       ${escalate ? `
-        <div class="yfswg-fb-debug">
-          <p class="yfswg-fb-debug-lead">這個問題似乎連續發生了。若持續無法使用，請協助回報，讓問題更快被修好：</p>
-          <ol class="yfswg-fb-steps">
+        <div class="yfas-fb-debug">
+          <p class="yfas-fb-debug-lead">這個問題似乎連續發生了。若持續無法使用，請協助回報，讓問題更快被修好：</p>
+          <ol class="yfas-fb-steps">
             <li>點下方「複製診斷資訊」。</li>
             <li>前往問題回報頁開一個新的 issue。</li>
             <li>把剛剛複製的內容貼上，並簡述你的操作。</li>
           </ol>
-          <textarea class="yfswg-fb-report" readonly rows="8"></textarea>
-          <div class="yfswg-fb-debug-actions">
-            <button type="button" class="yfswg-modal-btn yfswg-modal-btn--secondary" data-action="copy">複製診斷資訊</button>
-            <a class="yfswg-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">前往問題回報頁 ↗</a>
+          <textarea class="yfas-fb-report" readonly rows="8"></textarea>
+          <div class="yfas-fb-debug-actions">
+            <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="copy">複製診斷資訊</button>
+            <a class="yfas-fb-issue" href="${issuesUrl}" target="_blank" rel="noopener noreferrer">前往問題回報頁 ↗</a>
           </div>
         </div>` : ""}
-      <div class="yfswg-fb-actions">
-        <button type="button" class="yfswg-modal-btn yfswg-modal-btn--primary" data-action="close">關閉</button>
+      <div class="yfas-fb-actions">
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="close">關閉</button>
       </div>`,
         });
         if (!handle)
@@ -495,10 +448,10 @@
             addStyle(feedbackStyle, styleRef$1);
         const { overlay, close } = handle;
         // Assign text via textContent to avoid injecting untrusted strings as HTML.
-        overlay.querySelector(".yfswg-fb-msg").textContent = (_a = info.userMessage) !== null && _a !== void 0 ? _a : defaultMessage;
+        overlay.querySelector(".yfas-fb-msg").textContent = (_a = info.userMessage) !== null && _a !== void 0 ? _a : defaultMessage;
         overlay.querySelector("[data-action='close']").addEventListener("click", close);
         if (escalate) {
-            const reportEl = overlay.querySelector(".yfswg-fb-report");
+            const reportEl = overlay.querySelector(".yfas-fb-report");
             reportEl.value = report;
             const copyBtn = overlay.querySelector("[data-action='copy']");
             copyBtn.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
@@ -532,28 +485,28 @@
         });
     }
     const feedbackStyle = `
-.yfswg-fb-msg {
+.yfas-fb-msg {
   margin: 0 0 8px;
   font-size: 1.4rem;
   line-height: 1.5;
 }
-.yfswg-fb-debug {
+.yfas-fb-debug {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--yt-spec-10-percent-layer, rgba(0, 0, 0, 0.15));
 }
-.yfswg-fb-debug-lead {
+.yfas-fb-debug-lead {
   margin: 0 0 8px;
   font-size: 1.3rem;
   line-height: 1.5;
 }
-.yfswg-fb-steps {
+.yfas-fb-steps {
   margin: 0 0 12px;
   padding-left: 20px;
   font-size: 1.3rem;
   line-height: 1.6;
 }
-.yfswg-fb-report {
+.yfas-fb-report {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
@@ -567,26 +520,463 @@
   color: inherit;
   white-space: pre;
 }
-.yfswg-fb-debug-actions {
+.yfas-fb-debug-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-top: 10px;
 }
-.yfswg-fb-issue {
+.yfas-fb-issue {
   font-size: 1.3rem;
   color: var(--yt-spec-call-to-action, #065fd4);
   text-decoration: none;
 }
-.yfswg-fb-issue:hover {
+.yfas-fb-issue:hover {
   text-decoration: underline;
 }
-.yfswg-fb-actions {
+.yfas-fb-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
 }
 `;
+
+    /**
+     * Cross-tab handoff between the YouTube tab (which captures subtitles) and the AI provider tab
+     * (which injects them). GM storage is shared across all tabs running this userscript, so the
+     * payload survives the `openInTab` jump without going through the URL (avoiding length limits).
+     * ⚠️ Requires the directives `@grant GM.setValue`, `@grant GM.getValue`, `@grant GM.deleteValue`
+     */
+    const storageKey = "yfas-pending-summary";
+    /** Stores a captured payload for the AI provider tab to pick up. */
+    function stashSummaryPayload(payload) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield GM.setValue(storageKey, JSON.stringify(payload));
+        });
+    }
+    /**
+     * Reads and removes the pending payload (one-shot). Returns `null` if there is none or it is
+     * older than `maxAgeMs` (a stale handoff from a previous, unrelated session).
+     */
+    function takeSummaryPayload() {
+        return __awaiter(this, arguments, void 0, function* (maxAgeMs = 5 * 60000) {
+            const raw = yield GM.getValue(storageKey, "");
+            if (!raw)
+                return null;
+            yield GM.deleteValue(storageKey);
+            try {
+                const payload = JSON.parse(raw);
+                if (typeof payload.createdAt !== "number" || Date.now() - payload.createdAt > maxAgeMs)
+                    return null;
+                return payload;
+            }
+            catch (_a) {
+                return null;
+            }
+        });
+    }
+
+    /**
+     * AI provider registry + the generic "target tab" engine.
+     *
+     * The YouTube side captures subtitles and hands off a {@linkcode SummaryPayload}; the target tab
+     * (whichever AI site the user picked) picks it up and injects it into that site's prompt input,
+     * optionally submitting. Every site has a different DOM (textarea vs. contenteditable rich editor)
+     * and different submit affordances, so each is described declaratively by an {@linkcode AiProvider}
+     * and driven by one shared engine below.
+     */
+    /** Google AI Studio (the original target). Uses a plain textarea + a "Run" button. */
+    const aiStudio = {
+        id: "aistudio",
+        label: "Google AI Studio",
+        note: "品質最佳：不限字數、可免費使用 Pro 模型；思考時間較長，但結果非常準確。適合長字幕。",
+        recommended: true,
+        newChatUrl: "https://aistudio.google.com/prompts/new_chat",
+        hosts: ["aistudio.google.com"],
+        inputKind: "textarea",
+        inputSelectors: [
+            "ms-autosize-textarea textarea",
+            "ms-prompt-input-wrapper textarea",
+            "textarea[aria-label]",
+            "textarea",
+        ],
+        submitSelectors: [
+            "ms-run-button button",
+            "run-button button",
+            "button.run-button",
+            "button[aria-label='Run']",
+        ],
+        submitTexts: /^(run|執行|送出|傳送)$/i,
+        submitShortcut: "ctrl-enter",
+    };
+    /** Consumer Gemini (gemini.google.com) — a Quill rich editor, not AI Studio. */
+    const gemini = {
+        id: "gemini",
+        label: "Gemini",
+        note: "結果品質良好，但輸入框有長度限制，較長的字幕可能無法完整貼入。",
+        newChatUrl: "https://gemini.google.com/app",
+        hosts: ["gemini.google.com"],
+        inputKind: "contenteditable",
+        inputSelectors: [
+            "rich-textarea .ql-editor[contenteditable='true']",
+            "div.ql-editor[contenteditable='true']",
+            "[role='textbox'][contenteditable='true']",
+        ],
+        submitSelectors: [
+            "button.send-button",
+            "button[aria-label*='傳送']",
+            "button[aria-label*='發送']",
+            "button[aria-label*='Send']",
+        ],
+        submitShortcut: "enter",
+        // Gemini's /app landing resets the view on a too-early submit; wait for it to settle first.
+        settleBeforeSubmit: true,
+    };
+    /** ChatGPT (chatgpt.com) — ProseMirror contenteditable `#prompt-textarea`. */
+    const chatgpt = {
+        id: "chatgpt",
+        label: "ChatGPT",
+        note: "免費模型品質較弱；字幕過長時可能直接不回應。適合較短的影片。",
+        newChatUrl: "https://chatgpt.com/",
+        hosts: ["chatgpt.com", "chat.openai.com"],
+        inputKind: "contenteditable",
+        inputSelectors: [
+            "#prompt-textarea",
+            "div.ProseMirror[contenteditable='true']",
+            "[contenteditable='true'][id='prompt-textarea']",
+        ],
+        submitSelectors: [
+            "button[data-testid='send-button']",
+            "#composer-submit-button",
+            "button[aria-label*='Send']",
+        ],
+        submitShortcut: "enter",
+    };
+    /** Claude (claude.ai) — ProseMirror contenteditable editor. */
+    const claude = {
+        id: "claude",
+        label: "Claude",
+        note: "思考時間較長，結果偶有瑕疵。",
+        newChatUrl: "https://claude.ai/new",
+        hosts: ["claude.ai"],
+        inputKind: "contenteditable",
+        inputSelectors: [
+            "div.ProseMirror[contenteditable='true']",
+            "[contenteditable='true'][role='textbox']",
+            "fieldset div.ProseMirror",
+        ],
+        submitSelectors: [
+            "button[aria-label='Send message']",
+            "button[aria-label*='Send']",
+        ],
+        submitShortcut: "enter",
+    };
+    /** Grok (grok.com) — a plain textarea composer. */
+    const grok = {
+        id: "grok",
+        label: "Grok",
+        note: "品質次於 AI Studio，結果偶有小瑕疵。",
+        newChatUrl: "https://grok.com/",
+        hosts: ["grok.com"],
+        inputKind: "textarea",
+        inputSelectors: [
+            "textarea[aria-label]",
+            "textarea[dir='auto']",
+            "form textarea",
+            "textarea",
+        ],
+        submitSelectors: [
+            "button[type='submit']",
+            "button[aria-label*='Submit']",
+            "button[aria-label*='Send']",
+        ],
+        submitShortcut: "enter",
+    };
+    /** All supported providers, ordered best-to-worst (roughly) — this is the order shown to the user. */
+    const providers = [aiStudio, grok, claude, gemini, chatgpt];
+    /** Provider used when config is empty or references an unknown id (keeps old behaviour). */
+    const defaultProvider = aiStudio;
+    /** Looks up a provider by its persisted id, falling back to {@linkcode defaultProvider}. */
+    function getProviderById(id) {
+        var _a;
+        return (_a = providers.find(p => p.id === id)) !== null && _a !== void 0 ? _a : defaultProvider;
+    }
+    /** Returns the provider that owns the given hostname, if any (used to route the target tab). */
+    function getProviderByHost(hostname) {
+        return providers.find(p => p.hosts.some(h => hostname === h || hostname.endsWith(`.${h}`)));
+    }
+    /**
+     * Entry point for a target tab. Reads the pending payload (if this tab was opened by our YouTube
+     * side) and injects it into `provider`'s prompt field. A no-op on a normal, unrelated visit.
+     */
+    function initProviderTarget(provider) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const payload = yield takeSummaryPayload();
+            if (!payload)
+                return; // normal visit, nothing to inject
+            try {
+                let input = yield waitForInput(provider);
+                if (!input) {
+                    warn(`Could not find the ${provider.label} prompt input to inject into.`);
+                    void reportFailure({
+                        context: `provider:${provider.id}:no-input`,
+                        userMessage: `在 ${provider.label} 找不到輸入框，可能是頁面尚未載入完成或版面改版。請重新整理頁面後再試一次。`,
+                    });
+                    return;
+                }
+                injectPrompt(provider, input, payload.prompt);
+                log(`Injected subtitles into ${provider.label}${payload.title ? ` for "${payload.title}"` : ""}.`);
+                if (payload.autoSubmit) {
+                    if (provider.settleBeforeSubmit)
+                        input = yield settleBeforeSubmit(provider, input, payload.prompt);
+                    yield submitPrompt(provider, input);
+                }
+                else {
+                    log("Auto-submit disabled; leaving the prompt for review.");
+                }
+            }
+            catch (err) {
+                error(`Failed to inject the prompt into ${provider.label}:`, err);
+                void reportFailure({ context: `provider:${provider.id}:inject-error` });
+            }
+        });
+    }
+    /**
+     * Waits for the page to stop mutating before submitting, then makes sure our text is still in the
+     * field (the hydration churn can replace or clear the editor). Returns the input to submit against —
+     * re-resolved if the original node was swapped out. Used only by providers with `settleBeforeSubmit`.
+     */
+    function settleBeforeSubmit(provider, input, value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            yield waitForDomQuiet();
+            // If the settled app swapped the editor node or wiped its contents, re-find and re-inject.
+            const current = input.isConnected ? input : (_a = yield waitForInput(provider)) !== null && _a !== void 0 ? _a : input;
+            if (provider.inputKind === "contenteditable" && !hasText(current)) {
+                log(`${provider.label} cleared the prompt while settling; re-injecting.`);
+                injectPrompt(provider, current, value);
+            }
+            return current;
+        });
+    }
+    /**
+     * Resolves once the DOM has gone `quietMs` without a mutation (a proxy for "the SPA finished
+     * hydrating"), or after `maxMs` regardless so it can never hang. Cheaper and more accurate than a
+     * fixed sleep: it proceeds the moment the app calms down and only waits longer when it's still busy.
+     */
+    function waitForDomQuiet(quietMs = 450, maxMs = 6000) {
+        return new Promise((resolve) => {
+            let quietTimer = 0;
+            const finish = () => {
+                clearTimeout(quietTimer);
+                clearTimeout(hardCap);
+                obs.disconnect();
+                resolve();
+            };
+            const obs = new MutationObserver(() => {
+                clearTimeout(quietTimer);
+                quietTimer = window.setTimeout(finish, quietMs);
+            });
+            obs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
+            quietTimer = window.setTimeout(finish, quietMs);
+            const hardCap = window.setTimeout(finish, maxMs);
+        });
+    }
+    /** Waits (generously — these apps load slowly) for any candidate prompt input to appear. */
+    function waitForInput(provider) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const combined = provider.inputSelectors.join(", ");
+            const found = yield waitForSelector(combined, 20000, 200);
+            if (!found)
+                return null;
+            // Prefer a visible one if several match.
+            const all = [...document.querySelectorAll(combined)];
+            return (_a = all.find(el => el.offsetParent !== null)) !== null && _a !== void 0 ? _a : found;
+        });
+    }
+    /** Dispatches text into the provider's prompt field according to its {@linkcode InputKind}. */
+    function injectPrompt(provider, input, value) {
+        if (provider.inputKind === "textarea")
+            injectTextarea(input, value);
+        else
+            injectContentEditable(input, value);
+    }
+    /**
+     * Sets a value on a framework-controlled textarea. Assigning `.value` directly is ignored by
+     * Angular/React change detection, so we use the native value setter and dispatch an `input` event.
+     */
+    function injectTextarea(textarea, value) {
+        var _a, _b, _c;
+        const proto = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window).HTMLTextAreaElement.prototype;
+        const setter = (_b = (_a = Object.getOwnPropertyDescriptor(proto, "value")) === null || _a === void 0 ? void 0 : _a.set) !== null && _b !== void 0 ? _b : (_c = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")) === null || _c === void 0 ? void 0 : _c.set;
+        if (setter)
+            setter.call(textarea, value);
+        else
+            textarea.value = value;
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        textarea.dispatchEvent(new Event("change", { bubbles: true }));
+        textarea.focus();
+    }
+    /**
+     * Inserts text into a contenteditable rich editor (ProseMirror/Quill/Lexical). These editors ignore
+     * direct `textContent` writes, so we try, in order, the techniques they *do* honour, and after each
+     * one check whether text actually landed before giving up on it:
+     *   1. a synthetic `paste` carrying the transcript as `text/plain` (editors convert newlines to
+     *      their own block structure) — but a "handled" paste can still insert nothing if the engine
+     *      ignores our constructed `clipboardData`, so we verify rather than trusting `defaultPrevented`;
+     *   2. `execCommand("insertText")`, which fires the `beforeinput` these editors listen to;
+     *   3. a raw `textContent` write + `input` event as a last resort.
+     * Verifying between steps is what makes auto-submit work: the send button only enables once the
+     * editor's own model actually holds the text.
+     */
+    function injectContentEditable(el, value) {
+        el.focus();
+        placeCaretAtEnd(el);
+        try {
+            const dt = new DataTransfer();
+            dt.setData("text/plain", value);
+            const paste = new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true });
+            el.dispatchEvent(paste);
+            if (hasText(el))
+                return; // the editor consumed the paste and text landed
+        }
+        catch (err) {
+            warn("Synthetic paste failed, falling back to execCommand:", err);
+        }
+        if (document.execCommand("insertText", false, value) && hasText(el))
+            return;
+        warn("Paste and execCommand both left the editor empty; writing textContent directly.");
+        el.textContent = value;
+        el.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
+    }
+    /** Whether a contenteditable currently holds any non-whitespace text. */
+    function hasText(el) {
+        var _a;
+        return ((_a = el.textContent) !== null && _a !== void 0 ? _a : "").trim().length > 0;
+    }
+    /** Collapses the selection to the end of a contenteditable so insertions land inside it. */
+    function placeCaretAtEnd(el) {
+        try {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel === null || sel === void 0 ? void 0 : sel.removeAllRanges();
+            sel === null || sel === void 0 ? void 0 : sel.addRange(range);
+        }
+        catch (err) {
+            warn("Could not place caret in the editor:", err);
+        }
+    }
+    /**
+     * Submits the prompt on the user's behalf: clicks the provider's submit button once it becomes
+     * enabled, falling back to the provider's keyboard shortcut if the button can't be located.
+     */
+    function submitPrompt(provider, input) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const button = yield waitForSubmitButton(provider);
+            if (button) {
+                button.click();
+                log(`Clicked ${provider.label} submit button.`);
+                return;
+            }
+            warn(`${provider.label} submit button not found; trying keyboard shortcut fallback.`);
+            dispatchSubmitShortcut(input, provider.submitShortcut);
+        });
+    }
+    /** Polls for a visible, enabled submit button (frameworks enable it once the prompt has content). */
+    function waitForSubmitButton(provider, timeoutMs = 8000, intervalMs = 150) {
+        const start = Date.now();
+        return new Promise((resolve) => {
+            const check = () => {
+                const btn = findSubmitButton(provider);
+                if (btn)
+                    return resolve(btn);
+                if (Date.now() - start > timeoutMs)
+                    return resolve(null);
+                setTimeout(check, intervalMs);
+            };
+            check();
+        });
+    }
+    /** Finds a clickable submit button by selector or (fallback) by button text. */
+    function findSubmitButton(provider) {
+        var _a;
+        const bySelector = [...document.querySelectorAll(provider.submitSelectors.join(", "))];
+        const { submitTexts } = provider;
+        const byText = submitTexts
+            ? [...document.querySelectorAll("button")]
+                .filter(b => { var _a, _b; return submitTexts.test((_b = (_a = b.textContent) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : ""); })
+            : [];
+        return (_a = [...bySelector, ...byText].find(isClickable)) !== null && _a !== void 0 ? _a : null;
+    }
+    /** Whether a button is visible and not disabled. */
+    function isClickable(btn) {
+        return btn.offsetParent !== null && !btn.disabled && btn.getAttribute("aria-disabled") !== "true";
+    }
+    /** Dispatches the provider's submit shortcut (Enter or Ctrl+Enter) on the prompt field. */
+    function dispatchSubmitShortcut(el, shortcut) {
+        const opts = {
+            key: "Enter", code: "Enter", keyCode: 13, which: 13,
+            ctrlKey: shortcut === "ctrl-enter", bubbles: true, cancelable: true,
+        };
+        el.dispatchEvent(new KeyboardEvent("keydown", opts));
+        el.dispatchEvent(new KeyboardEvent("keyup", opts));
+    }
+
+    let canCompress;
+    /** Default prompt template - also used by the settings panel's "reset" action. */
+    const defaultPromptTemplate = [
+        "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。",
+        "",
+        "影片標題：{{title}}",
+        "影片連結：{{url}}",
+        "",
+        "{{transcript}}",
+    ].join("\n");
+    /** Factory so the defaults object isn't shared by reference. */
+    const getDefaultConfig = () => ({
+        provider: defaultProvider.id,
+        promptTemplate: defaultPromptTemplate,
+        includeTimestamps: true,
+        autoSubmit: true,
+        preferredLangs: "",
+    });
+    const config = new userutils.DataStore({
+        id: "script-config",
+        defaultData: getDefaultConfig(),
+        // increment this value if the data format changes:
+        formatVersion: 1,
+        // functions that migrate data from older versions to newer ones:
+        migrations: {
+        // migrate from v1 to v2:
+        // 2: (oldData) => {
+        //   return { ...oldData, newProp: "foo" };
+        // },
+        },
+        encodeData: (data) => canCompress ? userutils.compress(data, compressionFormat, "string") : data,
+        decodeData: (data) => canCompress ? userutils.decompress(data, compressionFormat, "string") : data,
+    });
+    function initConfig() {
+        return __awaiter(this, void 0, void 0, function* () {
+            canCompress = yield compressionSupported();
+            yield config.loadData();
+        });
+    }
+    function compressionSupported() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (typeof canCompress === "boolean")
+                return canCompress;
+            try {
+                yield userutils.compress(".", compressionFormat, "string");
+                return canCompress = true;
+            }
+            catch (e) {
+                return canCompress = false;
+            }
+        });
+    }
 
     /**
      * Intercepts the YouTube player's own `/api/timedtext` network requests so we can reuse the URL
@@ -705,41 +1095,6 @@
     }
 
     /**
-     * Cross-tab handoff between the YouTube tab (which captures subtitles) and the AI Studio tab
-     * (which injects them). GM storage is shared across all tabs running this userscript, so the
-     * payload survives the `openInTab` jump without going through the URL (avoiding length limits).
-     * ⚠️ Requires the directives `@grant GM.setValue`, `@grant GM.getValue`, `@grant GM.deleteValue`
-     */
-    const storageKey = "yfswg-pending-summary";
-    /** Stores a captured payload for the AI Studio tab to pick up. */
-    function stashSummaryPayload(payload) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield GM.setValue(storageKey, JSON.stringify(payload));
-        });
-    }
-    /**
-     * Reads and removes the pending payload (one-shot). Returns `null` if there is none or it is
-     * older than `maxAgeMs` (a stale handoff from a previous, unrelated session).
-     */
-    function takeSummaryPayload() {
-        return __awaiter(this, arguments, void 0, function* (maxAgeMs = 5 * 60000) {
-            const raw = yield GM.getValue(storageKey, "");
-            if (!raw)
-                return null;
-            yield GM.deleteValue(storageKey);
-            try {
-                const payload = JSON.parse(raw);
-                if (typeof payload.createdAt !== "number" || Date.now() - payload.createdAt > maxAgeMs)
-                    return null;
-                return payload;
-            }
-            catch (_a) {
-                return null;
-            }
-        });
-    }
-
-    /**
      * Inline SVG icons used in the UI. Inline (rather than image resources) so they scale crisply
      * and inherit the button's text color via `currentColor`, adapting to YouTube's light/dark theme.
      */
@@ -752,7 +1107,7 @@
 </svg>`.trim();
     /**
      * Spinning loading indicator: a ~270° arc drawn with `currentColor`. Rotation comes from the
-     * `yfswg-spin` CSS keyframes applied to its container while a summary is in progress.
+     * `yfas-spin` CSS keyframes applied to its container while a summary is in progress.
      */
     const loadingIcon = `
 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
@@ -768,44 +1123,53 @@
      * Settings panel (modal) for the YouTube side, opened from the button's gear half.
      * Reads/writes the persisted {@linkcode config} DataStore.
      */
-    const overlayId = "yfswg-settings-overlay";
-    const styleRef = "yfswg-settings";
+    const overlayId = "yfas-settings-overlay";
+    const styleRef = "yfas-settings";
     /** Opens the settings modal, prefilled from the current config. */
     function openSettings() {
         const data = config.getData();
         const handle = openModal({
             id: overlayId,
-            label: "YFSWG 設定",
+            label: "YFAS 設定",
             innerHtml: `
-      <h2 class="yfswg-modal-title">YouTube 摘要設定</h2>
+      <h2 class="yfas-modal-title">YouTube 摘要設定</h2>
 
-      <label class="yfswg-field">
-        <span class="yfswg-field-label">提示詞模板</span>
-        <span class="yfswg-field-hint">可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{transcript}}</code> 字幕</span>
-        <textarea class="yfswg-input yfswg-textarea" data-field="promptTemplate" rows="8"></textarea>
+      <label class="yfas-field">
+        <span class="yfas-field-label">AI 服務</span>
+        <span class="yfas-field-hint">選擇摘要要送到哪個 AI（需先登入該服務）</span>
+        <select class="yfas-input" data-field="provider">
+          ${providers.map(p => `<option value="${p.id}">${p.label}${p.recommended ? "（推薦）" : ""}</option>`).join("")}
+        </select>
+        <span class="yfas-provider-note" data-role="provider-note"></span>
       </label>
 
-      <label class="yfswg-field">
-        <span class="yfswg-field-label">偏好字幕語言</span>
-        <span class="yfswg-field-hint">逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言</span>
-        <input type="text" class="yfswg-input" data-field="preferredLangs" placeholder="留空＝自動" />
+      <label class="yfas-field">
+        <span class="yfas-field-label">提示詞模板</span>
+        <span class="yfas-field-hint">可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{transcript}}</code> 字幕</span>
+        <textarea class="yfas-input yfas-textarea" data-field="promptTemplate" rows="8"></textarea>
       </label>
 
-      <label class="yfswg-check">
+      <label class="yfas-field">
+        <span class="yfas-field-label">偏好字幕語言</span>
+        <span class="yfas-field-hint">逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言</span>
+        <input type="text" class="yfas-input" data-field="preferredLangs" placeholder="留空＝自動" />
+      </label>
+
+      <label class="yfas-check">
         <input type="checkbox" data-field="includeTimestamps" />
         <span>字幕包含時間戳（<code>[h:mm:ss]</code>）</span>
       </label>
 
-      <label class="yfswg-check">
+      <label class="yfas-check">
         <input type="checkbox" data-field="autoSubmit" />
-        <span>注入後自動於 AI Studio 送出</span>
+        <span>注入後自動送出</span>
       </label>
 
-      <div class="yfswg-actions">
-        <button type="button" class="yfswg-modal-btn yfswg-modal-btn--secondary" data-action="reset">重設為預設</button>
-        <span class="yfswg-spacer"></span>
-        <button type="button" class="yfswg-modal-btn yfswg-modal-btn--secondary" data-action="cancel">取消</button>
-        <button type="button" class="yfswg-modal-btn yfswg-modal-btn--primary" data-action="save">儲存</button>
+      <div class="yfas-actions">
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="reset">重設為預設</button>
+        <span class="yfas-spacer"></span>
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--secondary" data-action="cancel">取消</button>
+        <button type="button" class="yfas-modal-btn yfas-modal-btn--primary" data-action="save">儲存</button>
       </div>`,
         });
         if (!handle)
@@ -813,17 +1177,26 @@
         if (!document.getElementById(`global-style-${styleRef}`))
             addStyle(settingsStyle, styleRef);
         const { overlay, close } = handle;
+        const providerEl = overlay.querySelector("[data-field='provider']");
+        const providerNoteEl = overlay.querySelector("[data-role='provider-note']");
         const promptEl = overlay.querySelector("[data-field='promptTemplate']");
         const langEl = overlay.querySelector("[data-field='preferredLangs']");
         const tsEl = overlay.querySelector("[data-field='includeTimestamps']");
         const autoEl = overlay.querySelector("[data-field='autoSubmit']");
         // Prefill from config.
+        providerEl.value = data.provider;
         promptEl.value = data.promptTemplate;
         langEl.value = data.preferredLangs;
         tsEl.checked = data.includeTimestamps;
         autoEl.checked = data.autoSubmit;
+        // Show the selected provider's quality/limitation note, and keep it in sync with the dropdown.
+        const syncProviderNote = () => (providerNoteEl.textContent = getProviderById(providerEl.value).note);
+        syncProviderNote();
+        providerEl.addEventListener("change", syncProviderNote);
         overlay.querySelector("[data-action='cancel']").addEventListener("click", close);
         overlay.querySelector("[data-action='reset']").addEventListener("click", () => {
+            providerEl.value = defaultProvider.id;
+            syncProviderNote();
             promptEl.value = defaultPromptTemplate;
             langEl.value = "";
             tsEl.checked = true;
@@ -831,6 +1204,7 @@
         });
         overlay.querySelector("[data-action='save']").addEventListener("click", () => {
             void config.setData({
+                provider: providerEl.value,
                 promptTemplate: promptEl.value,
                 preferredLangs: langEl.value.trim(),
                 includeTimestamps: tsEl.checked,
@@ -841,30 +1215,30 @@
         promptEl.focus();
     }
     const settingsStyle = `
-.yfswg-field {
+.yfas-field {
   display: block;
   margin-bottom: 16px;
 }
-.yfswg-field-label {
+.yfas-field-label {
   display: block;
   font-size: 1.4rem;
   font-weight: 500;
   margin-bottom: 4px;
 }
-.yfswg-field-hint {
+.yfas-field-hint {
   display: block;
   font-size: 1.2rem;
   opacity: 0.7;
   margin-bottom: 6px;
 }
-.yfswg-field-hint code,
-.yfswg-check code {
+.yfas-field-hint code,
+.yfas-check code {
   font-family: monospace;
   background: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.08));
   padding: 1px 4px;
   border-radius: 4px;
 }
-.yfswg-input {
+.yfas-input {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -875,13 +1249,25 @@
   background: var(--yt-spec-base-background, #fff);
   color: inherit;
 }
-.yfswg-textarea {
+select.yfas-input {
+  cursor: pointer;
+  appearance: auto;
+}
+.yfas-provider-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  color: var(--yt-spec-text-secondary, inherit);
+}
+.yfas-textarea {
   resize: vertical;
   min-height: 120px;
   font-family: monospace;
   line-height: 1.4;
 }
-.yfswg-check {
+.yfas-check {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -889,18 +1275,18 @@
   margin-bottom: 12px;
   cursor: pointer;
 }
-.yfswg-check input {
+.yfas-check input {
   width: 18px;
   height: 18px;
   cursor: pointer;
 }
-.yfswg-actions {
+.yfas-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 20px;
 }
-.yfswg-spacer {
+.yfas-spacer {
   flex: 1;
 }
 `;
@@ -1166,13 +1552,11 @@
     //#endregion
 
     /**
-     * YouTube-side logic: injects the "Summarize with Gemini" button into the watch page's
-     * action row (next to Share / Save) and triggers subtitle capture when clicked.
+     * YouTube-side logic: injects the summary button into the watch page's action row
+     * (next to Share / Save) and triggers subtitle capture when clicked.
      */
-    /** Where to open Google AI Studio for a fresh chat. */
-    const aiStudioUrl = "https://aistudio.google.com/prompts/new_chat";
     /** id of the injected button, used to avoid inserting duplicates. */
-    const btnId = "yfswg-summary-btn";
+    const btnId = "yfas-summary-btn";
     /**
      * The like/dislike segmented button. We anchor to this element (rather than the action-row
      * container) and insert immediately to its left, so the button stays put across responsive
@@ -1181,7 +1565,7 @@
     const likeDislikeSelector = "ytd-watch-metadata segmented-like-dislike-button-view-model";
     /** Registers the button injection. Call once on the YouTube side after DOM load. */
     function initYoutube() {
-        addStyle(buttonStyle, "yfswg-button");
+        addStyle(buttonStyle, "yfas-button");
         void ensureSummaryButton();
         // The action row is re-rendered on SPA navigation, so re-insert after each navigation.
         window.addEventListener("yt-navigate-finish", () => void ensureSummaryButton());
@@ -1215,24 +1599,24 @@
             return;
         const split = document.createElement("div");
         split.id = btnId;
-        split.className = "yfswg-split";
+        split.className = "yfas-split";
         setInnerHtml(split, `
-    <button class="yfswg-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="用 Gemini 摘要" aria-label="用 Gemini 摘要">
+    <button class="yfas-main ${shapeBase} ytSpecButtonShapeNextIconLeading ytSpecButtonShapeNextSegmentedStart" title="${enabledLabel()}" aria-label="${enabledLabel()}">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${sparkleIcon}</div>
       <div class="ytSpecButtonShapeNextButtonTextContent">摘要</div>
     </button>
-    <button class="yfswg-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
+    <button class="yfas-settings ${shapeBase} ytSpecButtonShapeNextIconButton ytSpecButtonShapeNextSegmentedEnd" title="設定" aria-label="設定">
       <div aria-hidden="true" class="ytSpecButtonShapeNextIcon">${gearIcon}</div>
     </button>`);
-        const mainBtn = split.querySelector(".yfswg-main");
-        const gearBtn = split.querySelector(".yfswg-settings");
+        const mainBtn = split.querySelector(".yfas-main");
+        const gearBtn = split.querySelector(".yfas-settings");
         onInteraction(mainBtn, () => void onSummaryClick(mainBtn));
         onInteraction(gearBtn, () => openSettings());
         likeDislike.before(split);
         void watchCaptionAvailability(mainBtn);
     }
-    /** Default (enabled) label / tooltip for the summary button. */
-    const mainBtnLabel = "用 Gemini 摘要";
+    /** Default (enabled) label / tooltip for the summary button, naming the currently selected provider. */
+    const enabledLabel = () => `用 ${getProviderById(config.getData().provider).label} 摘要`;
     /** Label / tooltip shown while the button is greyed out because the video has no captions. */
     const noCaptionsLabel = "這部影片沒有可用的字幕，無法摘要";
     /**
@@ -1260,10 +1644,10 @@
      * assistive tech.
      */
     function setAvailable(mainBtn, available) {
-        mainBtn.classList.toggle("yfswg-disabled", !available);
+        mainBtn.classList.toggle("yfas-disabled", !available);
         mainBtn.disabled = !available;
         mainBtn.setAttribute("aria-disabled", String(!available));
-        const label = available ? mainBtnLabel : noCaptionsLabel;
+        const label = available ? enabledLabel() : noCaptionsLabel;
         mainBtn.title = label;
         mainBtn.setAttribute("aria-label", label);
     }
@@ -1292,7 +1676,7 @@
                     title: getVideoTitle(),
                     createdAt: Date.now(),
                 });
-                openInTab(aiStudioUrl, false); // foreground the AI Studio tab
+                openInTab(getProviderById(cfg.provider).newChatUrl, false); // foreground the AI provider tab
                 // Success: restore silently (handled in finally), no extra indicator.
             }
             catch (err) {
@@ -1306,10 +1690,10 @@
     }
     /** Toggles the button's busy state: dims it and swaps the sparkle icon for the spinner (or back). */
     function setBusy(btn, iconEl, busy) {
-        btn.classList.toggle("yfswg-busy", busy);
+        btn.classList.toggle("yfas-busy", busy);
         if (!iconEl)
             return;
-        iconEl.classList.toggle("yfswg-spin", busy);
+        iconEl.classList.toggle("yfas-spin", busy);
         setInnerHtml(iconEl, busy ? loadingIcon : sparkleIcon);
     }
     /** Builds the final prompt by substituting the template tokens with the video's data. */
@@ -1329,168 +1713,33 @@
         return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
     }
     const buttonStyle = `
-.yfswg-split {
+.yfas-split {
   display: inline-flex;
   align-items: center;
   gap: 1px;
   margin-right: 8px;
   vertical-align: middle;
 }
-.yfswg-split .ytSpecButtonShapeNextIcon svg {
+.yfas-split .ytSpecButtonShapeNextIcon svg {
   width: 100%;
   height: 100%;
   display: block;
 }
-.yfswg-main.yfswg-busy {
+.yfas-main.yfas-busy {
   opacity: 0.6;
   pointer-events: none;
 }
-.yfswg-main.yfswg-disabled {
+.yfas-main.yfas-disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.yfswg-split .ytSpecButtonShapeNextIcon.yfswg-spin {
-  animation: yfswg-spin 0.8s linear infinite;
+.yfas-split .ytSpecButtonShapeNextIcon.yfas-spin {
+  animation: yfas-spin 0.8s linear infinite;
 }
-@keyframes yfswg-spin {
+@keyframes yfas-spin {
   to { transform: rotate(360deg); }
 }
 `;
-
-    /**
-     * Google AI Studio side: picks up the subtitle payload handed off from the YouTube tab and
-     * injects it into the prompt input, ready for the user to run.
-     */
-    /**
-     * Candidate selectors for AI Studio's prompt input, most specific first. AI Studio is an Angular
-     * Material app whose DOM shifts over time, so we try several and fall back to the first visible
-     * textarea on the page.
-     */
-    const promptInputSelectors = [
-        "ms-autosize-textarea textarea",
-        "ms-prompt-input-wrapper textarea",
-        "textarea[aria-label]",
-        "textarea",
-    ];
-    /** Entry point for the AI Studio tab. Call once on load. */
-    function initAiStudio() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const payload = yield takeSummaryPayload();
-            if (!payload)
-                return; // normal AI Studio visit, nothing to inject
-            try {
-                const textarea = yield waitForPromptInput();
-                if (!textarea) {
-                    warn("Could not find the AI Studio prompt input to inject into.");
-                    void reportFailure({
-                        context: "aistudio:no-input",
-                        userMessage: "在 AI Studio 找不到輸入框，可能是頁面尚未載入完成或版面改版。請重新整理頁面後再試一次。",
-                    });
-                    return;
-                }
-                injectPrompt(textarea, payload.prompt);
-                log(`Injected subtitles into AI Studio prompt${payload.title ? ` for "${payload.title}"` : ""}.`);
-                if (payload.autoSubmit)
-                    yield submitPrompt(textarea);
-                else
-                    log("Auto-submit disabled; leaving the prompt for review.");
-            }
-            catch (err) {
-                error("Failed to inject the prompt into AI Studio:", err);
-                void reportFailure({ context: "aistudio:inject-error" });
-            }
-        });
-    }
-    /** Waits (generously, since AI Studio loads slowly) for any candidate prompt input to appear. */
-    function waitForPromptInput() {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const combined = promptInputSelectors.join(", ");
-            const found = yield waitForSelector(combined, 20000, 200);
-            if (!found)
-                return null;
-            // Prefer a visible one if several match.
-            const all = [...document.querySelectorAll(combined)];
-            return (_a = all.find(el => el.offsetParent !== null)) !== null && _a !== void 0 ? _a : found;
-        });
-    }
-    /** Candidate selectors for AI Studio's "Run" button, most specific first. */
-    const runButtonSelectors = [
-        "ms-run-button button",
-        "run-button button",
-        "button.run-button",
-        "button[aria-label='Run']",
-    ];
-    /** Button label texts that mean "run / submit" across locales. */
-    const runButtonTexts = /^(run|執行|送出|傳送)$/i;
-    /**
-     * Submits the prompt on the user's behalf: clicks the Run button once it becomes enabled,
-     * falling back to the Ctrl+Enter shortcut if the button can't be located.
-     */
-    function submitPrompt(textarea) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const button = yield waitForRunButton();
-            if (button) {
-                button.click();
-                log("Clicked AI Studio Run button.");
-                return;
-            }
-            warn("Run button not found; trying Ctrl+Enter fallback.");
-            dispatchRunShortcut(textarea);
-        });
-    }
-    /** Polls for a visible, enabled Run button (Angular enables it once the prompt has content). */
-    function waitForRunButton(timeoutMs = 8000, intervalMs = 150) {
-        const start = Date.now();
-        return new Promise((resolve) => {
-            const check = () => {
-                const btn = findRunButton();
-                if (btn)
-                    return resolve(btn);
-                if (Date.now() - start > timeoutMs)
-                    return resolve(null);
-                setTimeout(check, intervalMs);
-            };
-            check();
-        });
-    }
-    /** Finds a clickable Run button by selector or by button text. */
-    function findRunButton() {
-        var _a;
-        const bySelector = [...document.querySelectorAll(runButtonSelectors.join(", "))];
-        const byText = [...document.querySelectorAll("button")]
-            .filter(b => { var _a, _b; return runButtonTexts.test((_b = (_a = b.textContent) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : ""); });
-        return (_a = [...bySelector, ...byText].find(isClickable)) !== null && _a !== void 0 ? _a : null;
-    }
-    /** Whether a button is visible and not disabled. */
-    function isClickable(btn) {
-        return btn.offsetParent !== null && !btn.disabled && btn.getAttribute("aria-disabled") !== "true";
-    }
-    /** Dispatches Ctrl+Enter, AI Studio's keyboard shortcut to run the prompt. */
-    function dispatchRunShortcut(el) {
-        const opts = {
-            key: "Enter", code: "Enter", keyCode: 13, which: 13,
-            ctrlKey: true, bubbles: true, cancelable: true,
-        };
-        el.dispatchEvent(new KeyboardEvent("keydown", opts));
-        el.dispatchEvent(new KeyboardEvent("keyup", opts));
-    }
-    /**
-     * Sets a value on an Angular-controlled textarea. Assigning `.value` directly is ignored by
-     * Angular's change detection, so we use the native value setter and dispatch an `input` event.
-     */
-    function injectPrompt(textarea, value) {
-        var _a, _b, _c;
-        const proto = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window).HTMLTextAreaElement.prototype;
-        const setter = (_b = (_a = Object.getOwnPropertyDescriptor(proto, "value")) === null || _a === void 0 ? void 0 : _a.set) !== null && _b !== void 0 ? _b : (_c = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")) === null || _c === void 0 ? void 0 : _c.set;
-        if (setter)
-            setter.call(textarea, value);
-        else
-            textarea.value = value;
-        textarea.dispatchEvent(new Event("input", { bubbles: true }));
-        textarea.dispatchEvent(new Event("change", { bubbles: true }));
-        textarea.focus();
-    }
 
     /** Runs when the userscript is loaded initially */
     function init() {
@@ -1514,11 +1763,15 @@
                 addStyle("#{{GLOBAL_STYLE}}", "global");
                 registerDevCommands();
                 initObservers();
-                // The script matches both YouTube and Google AI Studio - run only the relevant side.
-                if (location.hostname.endsWith("youtube.com"))
+                // The script matches YouTube and every supported AI provider - run only the relevant side.
+                if (location.hostname.endsWith("youtube.com")) {
                     initYoutube();
-                else if (location.hostname.endsWith("aistudio.google.com"))
-                    void initAiStudio();
+                }
+                else {
+                    const provider = getProviderByHost(location.hostname);
+                    if (provider)
+                        void initProviderTarget(provider);
+                }
             }
             catch (err) {
                 error("Fatal error:", err);

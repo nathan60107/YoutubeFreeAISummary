@@ -13,7 +13,7 @@ export const sparkleIcon = `
 
 /**
  * Spinning loading indicator: a ~270° arc drawn with `currentColor`. Rotation comes from the
- * `yfswg-spin` CSS keyframes applied to its container while a summary is in progress.
+ * `yfas-spin` CSS keyframes applied to its container while a summary is in progress.
  */
 export const loadingIcon = `
 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">

@@ -8,7 +8,7 @@
 import { addStyle, setInnerHtml } from "./utils";
 
 /** Ref/id used for the shared base stylesheet, injected once. */
-const styleRef = "yfswg-modal";
+const styleRef = "yfas-modal";
 
 export interface ModalHandle {
   /** The full-screen overlay/backdrop element (also the query root for the caller's controls). */
@@ -26,7 +26,7 @@ export interface ModalOptions {
   label: string;
   /** ARIA role; use `"alertdialog"` for error/alert dialogs. Defaults to `"dialog"`. */
   role?: "dialog" | "alertdialog";
-  /** HTML for the modal body (everything inside the box). Use `.yfswg-modal-title` / `.yfswg-modal-btn*` for shared styling. */
+  /** HTML for the modal body (everything inside the box). Use `.yfas-modal-title` / `.yfas-modal-btn*` for shared styling. */
   innerHtml: string;
 }
 
@@ -44,10 +44,10 @@ export function openModal(opts: ModalOptions): ModalHandle | null {
 
   const overlay = document.createElement("div");
   overlay.id = opts.id;
-  overlay.className = "yfswg-modal-overlay";
-  setInnerHtml(overlay, `<div class="yfswg-modal-box" role="${opts.role ?? "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`);
+  overlay.className = "yfas-modal-overlay";
+  setInnerHtml(overlay, `<div class="yfas-modal-box" role="${opts.role ?? "dialog"}" aria-modal="true" aria-label="${opts.label}">${opts.innerHtml}</div>`);
 
-  const modal = overlay.querySelector<HTMLElement>(".yfswg-modal-box")!;
+  const modal = overlay.querySelector<HTMLElement>(".yfas-modal-box")!;
 
   const close = () => {
     overlay.remove();
@@ -70,7 +70,7 @@ export function openModal(opts: ModalOptions): ModalHandle | null {
 }
 
 const modalStyle = `
-.yfswg-modal-overlay {
+.yfas-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 2147483000;
@@ -80,7 +80,7 @@ const modalStyle = `
   background: rgba(0, 0, 0, 0.6);
   font-family: "Roboto", "Arial", sans-serif;
 }
-.yfswg-modal-box {
+.yfas-modal-box {
   width: min(560px, 92vw);
   max-height: 88vh;
   overflow-y: auto;
@@ -91,12 +91,12 @@ const modalStyle = `
   color: var(--yt-spec-text-primary, #0f0f0f);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
-.yfswg-modal-title {
+.yfas-modal-title {
   margin: 0 0 16px;
   font-size: 1.8rem;
   font-weight: 500;
 }
-.yfswg-modal-btn {
+.yfas-modal-btn {
   padding: 8px 16px;
   font-size: 1.4rem;
   font-weight: 500;
@@ -105,15 +105,15 @@ const modalStyle = `
   border: none;
   cursor: pointer;
 }
-.yfswg-modal-btn--primary {
+.yfas-modal-btn--primary {
   background: var(--yt-spec-call-to-action, #065fd4);
   color: #fff;
 }
-.yfswg-modal-btn--secondary {
+.yfas-modal-btn--secondary {
   background: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.08));
   color: inherit;
 }
-.yfswg-modal-btn:hover {
+.yfas-modal-btn:hover {
   filter: brightness(1.1);
 }
 `;

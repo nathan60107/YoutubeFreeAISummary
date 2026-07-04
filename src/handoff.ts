@@ -1,5 +1,5 @@
 /**
- * Cross-tab handoff between the YouTube tab (which captures subtitles) and the AI Studio tab
+ * Cross-tab handoff between the YouTube tab (which captures subtitles) and the AI provider tab
  * (which injects them). GM storage is shared across all tabs running this userscript, so the
  * payload survives the `openInTab` jump without going through the URL (avoiding length limits).
  * ⚠️ Requires the directives `@grant GM.setValue`, `@grant GM.getValue`, `@grant GM.deleteValue`
@@ -7,9 +7,9 @@
 
 import type { SummaryPayload } from "./types";
 
-const storageKey = "yfswg-pending-summary";
+const storageKey = "yfas-pending-summary";
 
-/** Stores a captured payload for the AI Studio tab to pick up. */
+/** Stores a captured payload for the AI provider tab to pick up. */
 export async function stashSummaryPayload(payload: SummaryPayload): Promise<void> {
   await GM.setValue(storageKey, JSON.stringify(payload));
 }

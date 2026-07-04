@@ -22,7 +22,7 @@ const suffix = getCliArg<CliArg<"config-suffix">>("suffix", "");
 //#MARKER settings:
 
 /** Path to the GitHub repo in the format "User/Repo" */
-const repo = "nathan60107/YoutubeFreeSummaryWithGemini";
+const repo = "nathan60107/YoutubeFreeAISummary";
 /** Name of the emitted userscript file */
 const userscriptDistFile = `${pkg.userscriptName}${suffix}.user.js`;
 
@@ -105,6 +105,11 @@ const ringBell = Boolean(env.RING_BELL && (env.RING_BELL.length > 0 && env.RING_
 // @icon              ${getResourceUrl("icon.svg", buildNbr)}
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
+// @match             *://gemini.google.com/*
+// @match             *://chatgpt.com/*
+// @match             *://chat.openai.com/*
+// @match             *://claude.ai/*
+// @match             *://grok.com/*
 // @run-at            document-start
 // @downloadURL       ${scriptUrl}
 // @updateURL         ${scriptUrl}

@@ -5,7 +5,7 @@ import { installTimedtextInterceptor } from "./intercept";
 import { initObservers } from "./observers";
 import { addStyle, domLoaded, error, log } from "./utils";
 import { initYoutube } from "./youtube";
-import { initAiStudio } from "./aistudio";
+import { getProviderByHost, initProviderTarget } from "./providers";
 
 /** Runs when the userscript is loaded initially */
 async function init() {
@@ -32,11 +32,15 @@ async function run() {
     registerDevCommands();
     initObservers();
 
-    // The script matches both YouTube and Google AI Studio - run only the relevant side.
-    if(location.hostname.endsWith("youtube.com"))
+    // The script matches YouTube and every supported AI provider - run only the relevant side.
+    if(location.hostname.endsWith("youtube.com")) {
       initYoutube();
-    else if(location.hostname.endsWith("aistudio.google.com"))
-      void initAiStudio();
+    }
+    else {
+      const provider = getProviderByHost(location.hostname);
+      if(provider)
+        void initProviderTarget(provider);
+    }
   }
   catch(err) {
     error("Fatal error:", err);
