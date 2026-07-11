@@ -1,0 +1,8 @@
+# Normalize all text files to LF in the repository.
+# The index is already all-LF, so this changes no committed content;
+# it just stops Git/GitHub Desktop from warning about LF<->CRLF conversion.
+* text=auto eol=lf
+
+# Binary assets — never touch line endings.
+*.png binary
+*.pdn binary

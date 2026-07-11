@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.6.0
+// @version           0.7.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=355797b
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=b49001c
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=355797b
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=b49001c
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "github";
-    const buildNumberRaw = "355797b";
+    const buildNumberRaw = "b49001c";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -1246,6 +1246,487 @@
 `;
 
     /**
+     * Intercepts the YouTube player's own `/api/timedtext` network requests so we can reuse the URL
+     * it generates - which carries a valid PoToken and the user's auth session. This is the only way
+     * to capture subtitles for PoToken-gated (`exp=xpe`) and member-only videos, where the static
+     * `baseUrl` from the player response returns an empty body and `get_transcript` is rejected.
+     *
+     * Installed at document-start (before the player runs) by patching `fetch` and `XMLHttpRequest`
+     * on the page realm via `unsafeWindow`.
+     */
+    const timedtextMarker = "/api/timedtext";
+    /** Page realm, where the player's `fetch` / `XMLHttpRequest` live. */
+    const pageWindow$2 = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window);
+    /** Most recently observed working timedtext URL (from the page's own requests). */
+    let latestUrl = null;
+    /** One-shot resolvers waiting for the next matching URL. */
+    const waiters = [];
+    let installed = false;
+    /** Records a captured URL if it is a timedtext request, and notifies any matching waiters. */
+    function record(rawUrl) {
+        if (!rawUrl.includes(timedtextMarker))
+            return;
+        latestUrl = rawUrl;
+        for (let i = waiters.length - 1; i >= 0; i--) {
+            const w = waiters[i];
+            if (w.match(rawUrl)) {
+                clearTimeout(w.timer);
+                waiters.splice(i, 1);
+                w.resolve(rawUrl);
+            }
+        }
+    }
+    /** Patches `fetch` and `XMLHttpRequest.open` on the page realm. Idempotent. */
+    function installTimedtextInterceptor() {
+        var _a;
+        if (installed)
+            return;
+        installed = true;
+        // fetch
+        const origFetch = pageWindow$2.fetch;
+        pageWindow$2.fetch = function (...args) {
+            try {
+                const input = args[0];
+                const url = typeof input === "string"
+                    ? input
+                    : input instanceof URL ? input.href : input.url;
+                record(url);
+            }
+            catch ( /* never let interception break the page's request */_a) { /* never let interception break the page's request */ }
+            return origFetch.apply(this, args);
+        };
+        // XMLHttpRequest
+        const proto = (_a = pageWindow$2.XMLHttpRequest) === null || _a === void 0 ? void 0 : _a.prototype;
+        if (proto) {
+            const origOpen = proto.open;
+            proto.open = function (...args) {
+                try {
+                    const u = args[1];
+                    record(typeof u === "string" ? u : u.href);
+                }
+                catch ( /* ignore */_a) { /* ignore */ }
+                return origOpen.apply(this, args);
+            };
+        }
+        log("timedtext interceptor installed");
+    }
+    /** True when `url` belongs to `videoId` (or any video when `videoId` is omitted). */
+    function matchesVideo(url, videoId) {
+        return !videoId || url.includes(`v=${videoId}`);
+    }
+    /**
+     * Returns an already-captured timedtext URL for `videoId` (or the latest one) without waiting,
+     * or `null` if none has been observed yet. Lets callers skip re-triggering the player.
+     */
+    function peekTimedtextUrl(videoId) {
+        return latestUrl && matchesVideo(latestUrl, videoId) ? latestUrl : null;
+    }
+    /**
+     * Resolves with a timedtext URL for `videoId` (or the latest one if `videoId` is omitted),
+     * waiting up to `timeoutMs` for the player to issue one. Resolves `null` on timeout.
+     */
+    function waitForTimedtextUrl(videoId, timeoutMs = 6000) {
+        const match = (url) => matchesVideo(url, videoId);
+        if (latestUrl && match(latestUrl))
+            return Promise.resolve(latestUrl);
+        return new Promise((resolve) => {
+            const timer = window.setTimeout(() => {
+                const i = waiters.findIndex(w => w.resolve === resolve);
+                if (i >= 0)
+                    waiters.splice(i, 1);
+                resolve(null);
+            }, timeoutMs);
+            waiters.push({ match, resolve, timer });
+        });
+    }
+
+    /**
+     * Page-based YouTube subtitle extraction.
+     *
+     * Design goal (see project memory): capture subtitles directly from the page the user
+     * is already watching, never via an external subtitle API. This is what makes the script
+     * work on member-only / region-locked / age-restricted videos, and avoids the third-party
+     * scraper breakage caused by YouTube's PoToken (`&exp=xpe`) requirement.
+     *
+     * Two layered strategies, tried in order:
+     *  1. Intercept the player's own `/api/timedtext` request (it carries a valid PoToken and the
+     *     user's session) and refetch it as `fmt=json3`.
+     *  2. DOM scrape of YouTube's own "Show transcript" panel.
+     */
+    //#endregion
+    //#region page-global access
+    /**
+     * Page globals (`ytInitialPlayerResponse`, the player element's methods) live in the page's
+     * realm. In sandboxed userscript engines we need `unsafeWindow` to reach them.
+     */
+    const pageWindow$1 = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window);
+    //#endregion
+    //#region player response
+    /**
+     * Returns the most up-to-date player response. `movie_player.getPlayerResponse()` reflects the
+     * currently playing video after SPA navigation, whereas `ytInitialPlayerResponse` goes stale.
+     */
+    function getPlayerResponse() {
+        var _a, _b;
+        try {
+            const player = ((_a = pageWindow$1.document) !== null && _a !== void 0 ? _a : document).getElementById("movie_player");
+            const fromPlayer = (_b = player === null || player === void 0 ? void 0 : player.getPlayerResponse) === null || _b === void 0 ? void 0 : _b.call(player);
+            if (fromPlayer === null || fromPlayer === void 0 ? void 0 : fromPlayer.captions)
+                return fromPlayer;
+        }
+        catch (err) {
+            warn("getPlayerResponse() unavailable, falling back to ytInitialPlayerResponse:", err);
+        }
+        return pageWindow$1.ytInitialPlayerResponse;
+    }
+    /** Extracts the caption track list from a player response. */
+    function getCaptionTracks(resp) {
+        var _a, _b, _c;
+        return (_c = (_b = (_a = resp === null || resp === void 0 ? void 0 : resp.captions) === null || _a === void 0 ? void 0 : _a.playerCaptionsTracklistRenderer) === null || _b === void 0 ? void 0 : _b.captionTracks) !== null && _c !== void 0 ? _c : [];
+    }
+    /** Resolves a track's display name across the two shapes YouTube uses. */
+    function trackName(track) {
+        var _a, _b, _c, _d, _e;
+        return (_e = (_b = (_a = track.name) === null || _a === void 0 ? void 0 : _a.simpleText) !== null && _b !== void 0 ? _b : (_d = (_c = track.name) === null || _c === void 0 ? void 0 : _c.runs) === null || _d === void 0 ? void 0 : _d.map(r => r.text).join("")) !== null && _e !== void 0 ? _e : track.languageCode;
+    }
+    /**
+     * Picks the best track for the user: first a manually-created track in a preferred language,
+     * then an auto-generated one in a preferred language, then any manual track, then anything.
+     */
+    function pickTrack(tracks, preferredLangs) {
+        var _a, _b, _c;
+        if (tracks.length === 0)
+            return undefined;
+        const matchesLang = (t) => preferredLangs.some(l => t.languageCode.toLowerCase().startsWith(l.toLowerCase()));
+        const isManual = (t) => t.kind !== "asr";
+        return (_c = (_b = (_a = tracks.find(t => matchesLang(t) && isManual(t))) !== null && _a !== void 0 ? _a : tracks.find(t => matchesLang(t))) !== null && _b !== void 0 ? _b : tracks.find(isManual)) !== null && _c !== void 0 ? _c : tracks[0];
+    }
+    //#endregion
+    //#region json3 parsing
+    /** Decodes a json3 timedtext payload into ordered segments. */
+    function parseJson3(data) {
+        var _a, _b, _c;
+        const segments = [];
+        for (const event of (_a = data.events) !== null && _a !== void 0 ? _a : []) {
+            const text = ((_b = event.segs) !== null && _b !== void 0 ? _b : []).map(s => { var _a; return (_a = s.utf8) !== null && _a !== void 0 ? _a : ""; }).join("").replace(/\s+/g, " ").trim();
+            if (text.length === 0)
+                continue;
+            segments.push({
+                start: ((_c = event.tStartMs) !== null && _c !== void 0 ? _c : 0) / 1000,
+                text,
+            });
+        }
+        return segments;
+    }
+    //#endregion
+    //#region strategy 1: intercepted player timedtext request
+    /**
+     * Turns on the player's captions (via the CC button) so it issues a timedtext request that our
+     * interceptor can capture. Clicking is a plain DOM action, avoiding cross-realm method calls.
+     */
+    function enablePlayerCaptions() {
+        const btn = document.querySelector(".ytp-subtitles-button");
+        if (!btn) {
+            warn("CC button (.ytp-subtitles-button) not found; cannot enable captions");
+            return;
+        }
+        if (btn.getAttribute("aria-pressed") !== "true")
+            btn.click();
+    }
+    /**
+     * Strategy: trigger the player to fetch captions, grab the (PoToken-bearing, authenticated) URL
+     * it requested via the interceptor, then refetch it as json3 ourselves. Works for member-only and
+     * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
+     */
+    function fetchViaInterceptedUrl(videoId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // If the player already issued a timedtext request we can reuse, don't disturb the user's
+            // caption state; only toggle captions on when we have nothing captured yet.
+            if (!peekTimedtextUrl(videoId))
+                enablePlayerCaptions();
+            const captured = yield waitForTimedtextUrl(videoId, 6000);
+            if (!captured) {
+                warn("no player timedtext request captured (could not enable captions in time?)");
+                return null;
+            }
+            const url = new URL(captured, location.origin);
+            url.searchParams.set("fmt", "json3");
+            const res = yield fetch(url.toString(), { credentials: "include" });
+            if (!res.ok)
+                return null;
+            const body = yield res.text();
+            if (body.trim().length === 0)
+                return null;
+            const segments = parseJson3(JSON.parse(body));
+            return segments.length > 0 ? segments : null;
+        });
+    }
+    //#endregion
+    //#region strategy 2: transcript panel DOM scrape
+    /** The "Show transcript" button, which lives in the description's transcript section. */
+    const transcriptButtonSelector = "ytd-video-description-transcript-section-renderer #primary-button button, "
+        + "ytd-video-description-transcript-section-renderer button";
+    /** The description "...more" expander, which must be opened for the transcript section to render. */
+    const descriptionExpandSelector = "ytd-text-inline-expander #expand, #description #expand, tp-yt-paper-button#expand";
+    /** A rendered transcript line. */
+    const transcriptRowSelector = "transcript-segment-view-model";
+    /**
+     * Opens YouTube's transcript panel so its segments render into the DOM, then waits for them.
+     * The "Show transcript" button only renders after the description is expanded, so we expand it
+     * first if the button isn't already present. Returns true once transcript rows are available.
+     */
+    function openTranscriptPanel() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            if (document.querySelector(transcriptRowSelector))
+                return true;
+            let button = document.querySelector(transcriptButtonSelector);
+            if (!button) {
+                (_a = document.querySelector(descriptionExpandSelector)) === null || _a === void 0 ? void 0 : _a.click();
+                button = yield waitForSelector(transcriptButtonSelector, 3000);
+            }
+            if (!button) {
+                warn("could not find the 'Show transcript' button");
+                return false;
+            }
+            button.click();
+            return Boolean(yield waitForSelector(transcriptRowSelector, 5000));
+        });
+    }
+    /** Reads already-rendered transcript segments from YouTube's "Show transcript" panel, if open. */
+    function scrapeTranscriptPanel() {
+        var _a, _b, _c, _d, _e, _f;
+        const segments = [];
+        for (const row of document.querySelectorAll(transcriptRowSelector)) {
+            const text = (_c = (_b = (_a = row.querySelector(".ytAttributedStringHost")) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.replace(/\s+/g, " ").trim()) !== null && _c !== void 0 ? _c : "";
+            if (text.length === 0)
+                continue;
+            const stamp = (_f = (_e = (_d = row.querySelector(".ytwTranscriptSegmentViewModelTimestamp")) === null || _d === void 0 ? void 0 : _d.textContent) === null || _e === void 0 ? void 0 : _e.trim()) !== null && _f !== void 0 ? _f : "";
+            segments.push({ start: parseTimestamp(stamp), text });
+        }
+        return segments;
+    }
+    /** Parses a "m:ss" / "h:mm:ss" transcript timestamp into seconds. */
+    function parseTimestamp(stamp) {
+        const parts = stamp.split(":").map(Number);
+        if (parts.some(isNaN))
+            return 0;
+        return parts.reduce((acc, n) => acc * 60 + n, 0);
+    }
+    //#endregion
+    //#region public API
+    /** Formats a number of seconds as `m:ss`, or `h:mm:ss` once it reaches an hour. */
+    function formatTimestamp(totalSeconds) {
+        const s = Math.max(0, Math.floor(totalSeconds));
+        const hrs = Math.floor(s / 3600);
+        const mins = Math.floor((s % 3600) / 60);
+        const secs = s % 60;
+        const pad = (n) => n.toString().padStart(2, "0");
+        return hrs > 0
+            ? `${hrs}:${pad(mins)}:${pad(secs)}`
+            : `${mins}:${pad(secs)}`;
+    }
+    /** Joins segments into `[h:mm:ss] text` lines for time-aware AI analysis. */
+    function toTimedText(segments) {
+        return segments.map(s => `[${formatTimestamp(s.start)}] ${s.text}`).join("\n");
+    }
+    /** Returns the browser UI language plus English as default preferred languages. */
+    function defaultPreferredLangs() {
+        var _a;
+        const langs = [navigator.language, ...((_a = navigator.languages) !== null && _a !== void 0 ? _a : [])].filter(Boolean);
+        return [...new Set([...langs, "en"])];
+    }
+    /**
+     * Whether the currently playing video exposes any caption track. Used to grey out the summary
+     * button up front when there is nothing to summarize.
+     */
+    function hasCaptionsAvailable() {
+        return getCaptionTracks(getPlayerResponse()).length > 0;
+    }
+    /**
+     * Captures subtitles for the currently playing video using page-based strategies.
+     * Returns `null` if the video has no captions available at all.
+     *
+     * @throws if a track was found but every strategy failed to produce text.
+     */
+    function getCurrentSubtitles() {
+        return __awaiter(this, arguments, void 0, function* (opts = {}) {
+            var _a, _b, _c;
+            const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
+            const resp = getPlayerResponse();
+            const tracks = getCaptionTracks(resp);
+            const track = pickTrack(tracks, preferredLangs);
+            // Strategy 1: intercept the player's own timedtext request (carries a valid PoToken and the
+            // user's session, so it works on member-only / exp=xpe videos).
+            if (track) {
+                let segments = null;
+                try {
+                    segments = yield fetchViaInterceptedUrl((_b = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _b === void 0 ? void 0 : _b.videoId);
+                }
+                catch (err) {
+                    warn("intercepted-timedtext fetch failed:", err);
+                }
+                if (segments && segments.length > 0) {
+                    return {
+                        lang: track.languageCode,
+                        trackName: trackName(track),
+                        segments,
+                        text: segments.map(s => s.text).join("\n"),
+                        timedText: toTimedText(segments),
+                        source: "intercept-timedtext",
+                    };
+                }
+            }
+            // Strategy 2: open + scrape YouTube's own transcript panel.
+            yield openTranscriptPanel();
+            const panelSegments = scrapeTranscriptPanel();
+            if (panelSegments.length > 0) {
+                return {
+                    lang: (_c = track === null || track === void 0 ? void 0 : track.languageCode) !== null && _c !== void 0 ? _c : "unknown",
+                    trackName: track ? trackName(track) : "Transcript",
+                    segments: panelSegments,
+                    text: panelSegments.map(s => s.text).join("\n"),
+                    timedText: toTimedText(panelSegments),
+                    source: "transcript-panel",
+                };
+            }
+            if (!track)
+                return null; // no captions at all
+            throw new Error("Found a caption track but could not capture its text (PoToken-gated and transcript panel unavailable)");
+        });
+    }
+    //#endregion
+
+    /**
+     * Off-page subtitle capture: fetches subtitles for an arbitrary video id *without* opening its
+     * watch page, so the thumbnail overlay button (see `thumbnails.ts`) can summarize straight from a
+     * home/search/related list.
+     *
+     * The on-page strategies in `subtitles.ts` (intercepting the player's timedtext request, scraping
+     * the transcript panel) all need the player to be running, which it isn't off-page. And the static
+     * `captionTracks[].baseUrl` from a normal (WEB) player response is now PoToken-gated (`exp=xpe`) and
+     * returns an empty body when fetched directly.
+     *
+     * So instead we ask YouTube's InnerTube `player` endpoint for a fresh player response while
+     * impersonating the **ANDROID** client: that client's `captionTracks[].baseUrl` is *not* PoToken-
+     * gated, so we can fetch it as `fmt=json3` and parse it with the same code path as the watch page.
+     * The request is same-origin (we're on youtube.com), so it just works under YouTube's CSP.
+     *
+     * Known limitation: this uses the *unauthenticated* ANDROID player (no SAPISIDHASH), so member-only
+     * / age-restricted / private videos return no caption tracks off-page. Those still need the watch
+     * page, where the interceptor strategy handles them with the user's real session.
+     */
+    /**
+     * ANDROID InnerTube client identity. The ANDROID client's caption `baseUrl`s aren't PoToken-gated,
+     * which is the whole reason we impersonate it here. The version drifts over time but YouTube is
+     * lenient about it; bump it if the endpoint starts rejecting requests.
+     */
+    const ANDROID_CLIENT = {
+        clientName: "ANDROID",
+        clientVersion: "20.10.38",
+        androidSdkVersion: 30,
+    };
+    /** Public WEB InnerTube key, used only as a fallback if the page's own key can't be read. */
+    const FALLBACK_INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+    /** Page realm, where YouTube's `ytcfg` (holding the real InnerTube key) lives. */
+    const pageWindow = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window);
+    /** Builds the canonical watch URL for a video id. */
+    function watchUrl(videoId) {
+        return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    /** Reads the page's own InnerTube API key (from `ytcfg`), falling back to the public WEB key. */
+    function getInnertubeApiKey() {
+        var _a, _b, _c, _d, _e;
+        try {
+            const key = (_c = (_b = (_a = pageWindow.ytcfg) === null || _a === void 0 ? void 0 : _a.get) === null || _b === void 0 ? void 0 : _b.call(_a, "INNERTUBE_API_KEY")) !== null && _c !== void 0 ? _c : (_e = (_d = pageWindow.ytcfg) === null || _d === void 0 ? void 0 : _d.data_) === null || _e === void 0 ? void 0 : _e.INNERTUBE_API_KEY;
+            if (typeof key === "string" && key.length > 0)
+                return key;
+        }
+        catch ( /* fall through to the constant */_f) { /* fall through to the constant */ }
+        return FALLBACK_INNERTUBE_API_KEY;
+    }
+    /**
+     * Fetches a fresh player response for `videoId` from the InnerTube `player` endpoint using the
+     * ANDROID client, so the caption `baseUrl`s it returns are usable without a PoToken.
+     */
+    function fetchAndroidPlayerResponse(videoId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const apiKey = getInnertubeApiKey();
+            const hl = (navigator.language || "en").split("-")[0];
+            const res = yield fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}&prettyPrint=false`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-YouTube-Client-Name": "3", // 3 = ANDROID
+                    "X-YouTube-Client-Version": ANDROID_CLIENT.clientVersion,
+                },
+                body: JSON.stringify({ context: { client: Object.assign(Object.assign({}, ANDROID_CLIENT), { hl }) }, videoId }),
+            });
+            if (!res.ok) {
+                warn(`InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
+                return null;
+            }
+            return yield res.json();
+        });
+    }
+    /** Fetches a caption track's `baseUrl` as `fmt=json3` and parses it into segments. */
+    function fetchTrackSegments(baseUrl) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const url = new URL(baseUrl, "https://www.youtube.com");
+            url.searchParams.set("fmt", "json3");
+            const res = yield fetch(url.toString(), { credentials: "include" });
+            if (!res.ok)
+                return null;
+            const body = yield res.text();
+            if (body.trim().length === 0)
+                return null;
+            const segments = parseJson3(JSON.parse(body));
+            return segments.length > 0 ? segments : null;
+        });
+    }
+    /**
+     * Captures subtitles for `videoId` without opening its watch page.
+     * Returns `null` if the video has no caption tracks at all.
+     *
+     * @throws if the video is gated (login/age) or a track exists but its text couldn't be fetched.
+     */
+    function getSubtitlesForVideo(videoId_1) {
+        return __awaiter(this, arguments, void 0, function* (videoId, opts = {}) {
+            var _a, _b, _c, _d;
+            const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
+            const resp = yield fetchAndroidPlayerResponse(videoId);
+            const tracks = getCaptionTracks(resp !== null && resp !== void 0 ? resp : undefined);
+            const track = pickTrack(tracks, preferredLangs);
+            if (!track) {
+                // No tracks can mean "genuinely no captions" or "the ANDROID player couldn't play it" (member-
+                // only / age-restricted / private): distinguish so the failure message can point to the watch page.
+                const status = (_b = resp === null || resp === void 0 ? void 0 : resp.playabilityStatus) === null || _b === void 0 ? void 0 : _b.status;
+                if (status && status !== "OK")
+                    throw new Error(`Video ${videoId} is not accessible off-page (${status}); open the watch page to summarize it`);
+                return null; // no captions at all
+            }
+            const videoTitle = (_d = (_c = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _c === void 0 ? void 0 : _c.title) !== null && _d !== void 0 ? _d : "";
+            if (!track.baseUrl)
+                throw new Error(`Caption track for ${videoId} has no baseUrl to fetch`);
+            const segments = yield fetchTrackSegments(track.baseUrl);
+            if (!segments)
+                throw new Error(`Found a caption track for ${videoId} but its timedtext body was empty`);
+            return {
+                videoId,
+                videoTitle,
+                videoUrl: watchUrl(videoId),
+                lang: track.languageCode,
+                trackName: trackName(track),
+                segments,
+                text: segments.map(s => s.text).join("\n"),
+                timedText: toTimedText(segments),
+                source: "innertube-player",
+            };
+        });
+    }
+
+    /**
      * Cross-tab handoff between the YouTube tab (which captures subtitles) and the AI provider tab
      * (which injects them). GM storage is shared across all tabs running this userscript, so the
      * payload survives the `openInTab` jump without going through the URL (avoiding length limits).
@@ -1676,97 +2157,128 @@
     }
 
     /**
-     * Intercepts the YouTube player's own `/api/timedtext` network requests so we can reuse the URL
-     * it generates - which carries a valid PoToken and the user's auth session. This is the only way
-     * to capture subtitles for PoToken-gated (`exp=xpe`) and member-only videos, where the static
-     * `baseUrl` from the player response returns an empty body and `get_transcript` is rejected.
+     * Builds the final AI prompt from a captured transcript, shared by both trigger surfaces: the
+     * watch-page summary button and the off-page thumbnail overlay. Kept separate from `youtube.ts`
+     * so the off-page path can supply its own title/URL (the ones it fetched) instead of reading the
+     * current watch page's DOM.
+     */
+    /**
+     * Substitutes the template tokens with the video's data. An empty template means "follow the
+     * interface language": the active locale's default prompt is used instead.
      *
-     * Installed at document-start (before the player runs) by patching `fetch` and `XMLHttpRequest`
-     * on the page realm via `unsafeWindow`.
+     * @param title   Video title, substituted for `{{title}}`.
+     * @param url     Watch URL, substituted for `{{url}}`.
      */
-    const timedtextMarker = "/api/timedtext";
-    /** Page realm, where the player's `fetch` / `XMLHttpRequest` live. */
-    const pageWindow$1 = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window);
-    /** Most recently observed working timedtext URL (from the page's own requests). */
-    let latestUrl = null;
-    /** One-shot resolvers waiting for the next matching URL. */
-    const waiters = [];
-    let installed = false;
-    /** Records a captured URL if it is a timedtext request, and notifies any matching waiters. */
-    function record(rawUrl) {
-        if (!rawUrl.includes(timedtextMarker))
-            return;
-        latestUrl = rawUrl;
-        for (let i = waiters.length - 1; i >= 0; i--) {
-            const w = waiters[i];
-            if (w.match(rawUrl)) {
-                clearTimeout(w.timer);
-                waiters.splice(i, 1);
-                w.resolve(rawUrl);
+    function buildPrompt(result, template, includeTimestamps, title, url) {
+        const transcript = includeTimestamps ? result.timedText : result.text;
+        return (template.trim() || t("prompt.default"))
+            .split("{{title}}").join(title)
+            .split("{{url}}").join(url)
+            .split("{{transcript}}").join(transcript);
+    }
+
+    /**
+     * The shared "capture the current watch page's subtitles and hand them to the AI provider" flow.
+     *
+     * Used by two triggers: the watch-page summary button (`youtube.ts`), and the auto-summary tab that
+     * the off-page thumbnail button opens for gated videos (`auto-summarize.ts`). Keeping it here (rather
+     * than in `youtube.ts`) avoids an import cycle with `auto-summarize.ts`.
+     */
+    /** Reads the current video's title from the watch page, falling back to the document title. */
+    function getVideoTitle() {
+        var _a, _b;
+        const fromMeta = (_b = (_a = document.querySelector("ytd-watch-metadata h1")) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
+        if (fromMeta)
+            return fromMeta;
+        return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
+    }
+    /**
+     * Captures the current watch page's subtitles and stashes a payload for the AI provider tab, then
+     * opens that tab. Assumes we're on a watch page with the player available.
+     *
+     * @returns `true` if a summary was handed off; `false` if the video has no captions (a no-captions
+     *   failure is reported to the user in that case).
+     * @throws if capture itself fails (the caller is expected to report the error).
+     */
+    function captureAndHandoff() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cfg = config.getData();
+            const preferredLangs = cfg.preferredLangs.split(",").map(s => s.trim()).filter(Boolean);
+            const result = yield getCurrentSubtitles(preferredLangs.length > 0 ? { preferredLangs } : {});
+            if (!result) {
+                warn("No captions are available for this video.");
+                void reportFailure({ context: "youtube:no-captions", userMessage: t("error.noCaptions") });
+                return false;
             }
+            log(`Captured ${result.segments.length} subtitle lines `
+                + `(${result.trackName}, lang=${result.lang}, via ${result.source}).`);
+            yield stashSummaryPayload({
+                prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, getVideoTitle(), location.href),
+                autoSubmit: cfg.autoSubmit,
+                title: getVideoTitle(),
+                createdAt: Date.now(),
+            });
+            openInTab(getProviderById(cfg.provider).newChatUrl, false); // foreground the AI provider tab
+            return true;
+        });
+    }
+
+    /**
+     * "Auto-summary tab" — the off-page path for gated videos (member-only / age-restricted) that the
+     * unauthenticated ANDROID player can't reach.
+     *
+     * Instead of navigating the user's current tab (which loses their feed scroll position), we open the
+     * video's watch page in a *new* tab carrying a `#yfas-autosummarize` marker. That tab has the real,
+     * session-authenticated player — so member content and correctly-bound PoTokens just work — detects
+     * the marker on load, runs the normal on-page capture, hands off to the AI provider, and then closes
+     * itself. The user's original tab is never touched.
+     */
+    /** URL-hash marker identifying a watch tab we opened to auto-summarize. */
+    const marker = "yfas-autosummarize";
+    /**
+     * Opens `videoId`'s watch page in a new tab that will auto-summarize itself and close. Opened in the
+     * foreground so the player runs without background-tab throttling and any failure stays visible; the
+     * user's current (feed) tab keeps its scroll position because it is never navigated.
+     */
+    function openAutoSummaryTab(videoId) {
+        openInTab(`${watchUrl(videoId)}#${marker}`, false);
+    }
+    /** Whether this page load is an auto-summary request (a watch page we opened with the marker). */
+    function isAutoSummaryRequest() {
+        return location.pathname.startsWith("/watch") && location.hash.includes(marker);
+    }
+    /** Closes the current tab (best-effort — some managers restrict closing script-opened tabs). */
+    function closeSelfTab() {
+        try {
+            window.close();
+        }
+        catch (err) {
+            warn("could not auto-close the summary tab:", err);
         }
     }
-    /** Patches `fetch` and `XMLHttpRequest.open` on the page realm. Idempotent. */
-    function installTimedtextInterceptor() {
-        var _a;
-        if (installed)
-            return;
-        installed = true;
-        // fetch
-        const origFetch = pageWindow$1.fetch;
-        pageWindow$1.fetch = function (...args) {
+    /**
+     * Runs in an auto-summary tab: waits for the player, captures + hands off, then closes the tab.
+     * On failure the tab is left open so the reported error stays visible. `config` must already be loaded.
+     */
+    function runAutoSummary() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Strip our marker from the URL so it doesn't leak into the prompt's {{url}} or linger in history.
             try {
-                const input = args[0];
-                const url = typeof input === "string"
-                    ? input
-                    : input instanceof URL ? input.href : input.url;
-                record(url);
+                history.replaceState(null, "", location.pathname + location.search);
             }
-            catch ( /* never let interception break the page's request */_a) { /* never let interception break the page's request */ }
-            return origFetch.apply(this, args);
-        };
-        // XMLHttpRequest
-        const proto = (_a = pageWindow$1.XMLHttpRequest) === null || _a === void 0 ? void 0 : _a.prototype;
-        if (proto) {
-            const origOpen = proto.open;
-            proto.open = function (...args) {
-                try {
-                    const u = args[1];
-                    record(typeof u === "string" ? u : u.href);
-                }
-                catch ( /* ignore */_a) { /* ignore */ }
-                return origOpen.apply(this, args);
-            };
-        }
-        log("timedtext interceptor installed");
-    }
-    /** True when `url` belongs to `videoId` (or any video when `videoId` is omitted). */
-    function matchesVideo(url, videoId) {
-        return !videoId || url.includes(`v=${videoId}`);
-    }
-    /**
-     * Returns an already-captured timedtext URL for `videoId` (or the latest one) without waiting,
-     * or `null` if none has been observed yet. Lets callers skip re-triggering the player.
-     */
-    function peekTimedtextUrl(videoId) {
-        return latestUrl && matchesVideo(latestUrl, videoId) ? latestUrl : null;
-    }
-    /**
-     * Resolves with a timedtext URL for `videoId` (or the latest one if `videoId` is omitted),
-     * waiting up to `timeoutMs` for the player to issue one. Resolves `null` on timeout.
-     */
-    function waitForTimedtextUrl(videoId, timeoutMs = 6000) {
-        const match = (url) => matchesVideo(url, videoId);
-        if (latestUrl && match(latestUrl))
-            return Promise.resolve(latestUrl);
-        return new Promise((resolve) => {
-            const timer = window.setTimeout(() => {
-                const i = waiters.findIndex(w => w.resolve === resolve);
-                if (i >= 0)
-                    waiters.splice(i, 1);
-                resolve(null);
-            }, timeoutMs);
-            waiters.push({ match, resolve, timer });
+            catch ( /* replaceState unavailable — harmless, the marker just stays in the URL */_a) { /* replaceState unavailable — harmless, the marker just stays in the URL */ }
+            log("Auto-summary tab: waiting for the player, then capturing…");
+            let handedOff = false;
+            try {
+                yield waitForSelector("#movie_player", 20000);
+                handedOff = yield captureAndHandoff();
+            }
+            catch (err) {
+                error("Auto-summary capture failed:", err);
+                void reportFailure({ context: "youtube:auto-summary-error" });
+            }
+            if (handedOff)
+                closeSelfTab();
         });
     }
 
@@ -2041,264 +2553,199 @@ select.yfas-input {
 `;
 
     /**
-     * Page-based YouTube subtitle extraction.
+     * Off-page summary trigger: a small sparkle button that fades in over any video thumbnail (home,
+     * search, related, channel, …). Clicking it summarizes that video without the user opening it.
      *
-     * Design goal (see project memory): capture subtitles directly from the page the user
-     * is already watching, never via an external subtitle API. This is what makes the script
-     * work on member-only / region-locked / age-restricted videos, and avoids the third-party
-     * scraper breakage caused by YouTube's PoToken (`&exp=xpe`) requirement.
-     *
-     * Two layered strategies, tried in order:
-     *  1. Intercept the player's own `/api/timedtext` request (it carries a valid PoToken and the
-     *     user's session) and refetch it as `fmt=json3`.
-     *  2. DOM scrape of YouTube's own "Show transcript" panel.
+     * Public videos are captured entirely off-page via the ANDROID InnerTube player (`remote-subtitles.ts`).
+     * Gated videos (member-only / age-restricted), which that unauthenticated player can't reach, fall
+     * back to a new auto-summary tab that captures with the user's real session (`auto-summarize.ts`).
      */
-    //#endregion
-    //#region page-global access
+    /** Class of the injected overlay button, also used to guard against double-injection. */
+    const btnClass = "yfas-thumb-btn";
+    /** Class placed on the thumbnail anchor that hosts a button, so CSS can reveal it on hover. */
+    const hostClass = "yfas-thumb-host";
+    /** Dataset flag marking an anchor we've already processed (whether or not a button was added). */
+    const processedFlag = "yfasThumb";
     /**
-     * Page globals (`ytInitialPlayerResponse`, the player element's methods) live in the page's
-     * realm. In sandboxed userscript engines we need `unsafeWindow` to reach them.
+     * Thumbnail anchors across YouTube's list surfaces. Classic renderers use `a#thumbnail`; the newer
+     * `*ViewModel` lockups use camelCase content-image classes (`ytLockupViewModelContentImage` for
+     * videos, `reel-item-endpoint` for Shorts). We deliberately target the *image* anchor, not the
+     * metadata/title link, so the button lands on the positioned thumbnail box (where the duration badge
+     * sits) — a reliable containing block for our absolutely-placed button. YouTube renames these often,
+     * so this list is best-effort and expected to drift.
      */
-    const pageWindow = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window);
-    //#endregion
-    //#region player response
-    /**
-     * Returns the most up-to-date player response. `movie_player.getPlayerResponse()` reflects the
-     * currently playing video after SPA navigation, whereas `ytInitialPlayerResponse` goes stale.
-     */
-    function getPlayerResponse() {
-        var _a, _b;
+    const thumbnailAnchorSelector = [
+        "a#thumbnail",
+        "a.ytd-thumbnail",
+        "a.ytLockupViewModelContentImage", // current lockup (home/search/related feed)
+        "a.reel-item-endpoint", // current Shorts lockup thumbnail
+        "a.yt-lockup-view-model-wiz__content-image", // older lockup (kept for compatibility)
+    ].join(", ");
+    /** Extracts a video id from a thumbnail anchor's href (watch / shorts / live / embed forms). */
+    function videoIdFromHref(href) {
         try {
-            const player = ((_a = pageWindow.document) !== null && _a !== void 0 ? _a : document).getElementById("movie_player");
-            const fromPlayer = (_b = player === null || player === void 0 ? void 0 : player.getPlayerResponse) === null || _b === void 0 ? void 0 : _b.call(player);
-            if (fromPlayer === null || fromPlayer === void 0 ? void 0 : fromPlayer.captions)
-                return fromPlayer;
+            const u = new URL(href, location.origin);
+            const v = u.searchParams.get("v");
+            if (v)
+                return v;
+            const path = u.pathname.match(/^\/(?:shorts|live|embed)\/([\w-]{6,})/);
+            return path ? path[1] : null;
         }
-        catch (err) {
-            warn("getPlayerResponse() unavailable, falling back to ytInitialPlayerResponse:", err);
+        catch (_a) {
+            return null;
         }
-        return pageWindow.ytInitialPlayerResponse;
     }
-    /** Extracts the caption track list from a player response. */
-    function getCaptionTracks(resp) {
-        var _a, _b, _c;
-        return (_c = (_b = (_a = resp === null || resp === void 0 ? void 0 : resp.captions) === null || _a === void 0 ? void 0 : _a.playerCaptionsTracklistRenderer) === null || _b === void 0 ? void 0 : _b.captionTracks) !== null && _c !== void 0 ? _c : [];
-    }
-    /** Resolves a track's display name across the two shapes YouTube uses. */
-    function trackName(track) {
-        var _a, _b, _c, _d, _e;
-        return (_e = (_b = (_a = track.name) === null || _a === void 0 ? void 0 : _a.simpleText) !== null && _b !== void 0 ? _b : (_d = (_c = track.name) === null || _c === void 0 ? void 0 : _c.runs) === null || _d === void 0 ? void 0 : _d.map(r => r.text).join("")) !== null && _e !== void 0 ? _e : track.languageCode;
-    }
-    /**
-     * Picks the best track for the user: first a manually-created track in a preferred language,
-     * then an auto-generated one in a preferred language, then any manual track, then anything.
-     */
-    function pickTrack(tracks, preferredLangs) {
-        var _a, _b, _c;
-        if (tracks.length === 0)
-            return undefined;
-        const matchesLang = (t) => preferredLangs.some(l => t.languageCode.toLowerCase().startsWith(l.toLowerCase()));
-        const isManual = (t) => t.kind !== "asr";
-        return (_c = (_b = (_a = tracks.find(t => matchesLang(t) && isManual(t))) !== null && _a !== void 0 ? _a : tracks.find(t => matchesLang(t))) !== null && _b !== void 0 ? _b : tracks.find(isManual)) !== null && _c !== void 0 ? _c : tracks[0];
-    }
-    //#endregion
-    //#region json3 parsing
-    /** Decodes a json3 timedtext payload into ordered segments. */
-    function parseJson3(data) {
-        var _a, _b, _c, _d;
-        const segments = [];
-        for (const event of (_a = data.events) !== null && _a !== void 0 ? _a : []) {
-            const text = ((_b = event.segs) !== null && _b !== void 0 ? _b : []).map(s => { var _a; return (_a = s.utf8) !== null && _a !== void 0 ? _a : ""; }).join("").replace(/\s+/g, " ").trim();
-            if (text.length === 0)
-                continue;
-            segments.push({
-                start: ((_c = event.tStartMs) !== null && _c !== void 0 ? _c : 0) / 1000,
-                duration: ((_d = event.dDurationMs) !== null && _d !== void 0 ? _d : 0) / 1000,
-                text,
-            });
-        }
-        return segments;
-    }
-    //#endregion
-    //#region strategy 1: intercepted player timedtext request
-    /**
-     * Turns on the player's captions (via the CC button) so it issues a timedtext request that our
-     * interceptor can capture. Clicking is a plain DOM action, avoiding cross-realm method calls.
-     */
-    function enablePlayerCaptions() {
-        const btn = document.querySelector(".ytp-subtitles-button");
-        if (!btn) {
-            warn("CC button (.ytp-subtitles-button) not found; cannot enable captions");
+    /** Default label / tooltip for an overlay button, naming the currently selected provider. */
+    const buttonLabel = () => t("button.summarizeWith", getProviderById(config.getData().provider).label);
+    /** Injects the overlay button into a thumbnail anchor the first time it's hovered. */
+    function injectButton(anchor) {
+        if (anchor.dataset[processedFlag])
             return;
-        }
-        if (btn.getAttribute("aria-pressed") !== "true")
-            btn.click();
+        anchor.dataset[processedFlag] = "1";
+        const videoId = videoIdFromHref(anchor.href);
+        if (!videoId)
+            return; // playlist/channel/other non-video thumbnail
+        anchor.classList.add(hostClass);
+        const btn = document.createElement("div");
+        btn.className = btnClass;
+        // A div with role=button (rather than a <button>) avoids nesting interactive content inside the
+        // thumbnail's <a>; onInteraction gives it click + keyboard activation and stops the anchor from
+        // navigating when it's pressed.
+        btn.setAttribute("role", "button");
+        btn.setAttribute("tabindex", "0");
+        const label = buttonLabel();
+        btn.title = label;
+        btn.setAttribute("aria-label", label);
+        setInnerHtml(btn, sparkleIcon);
+        onInteraction(btn, () => void onThumbClick(btn, videoId));
+        anchor.appendChild(btn);
+    }
+    /** Toggles an overlay button's busy state: swaps the sparkle for the spinner and blocks re-clicks. */
+    function setBusy$1(btn, busy) {
+        btn.classList.toggle("yfas-busy", busy);
+        setInnerHtml(btn, busy ? loadingIcon : sparkleIcon);
     }
     /**
-     * Strategy: trigger the player to fetch captions, grab the (PoToken-bearing, authenticated) URL
-     * it requested via the interceptor, then refetch it as json3 ourselves. Works for member-only and
-     * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
+     * Summarizes a thumbnail's video. Tries the fast ANDROID InnerTube player first (fully off-page,
+     * covers public videos). If that throws, the video is gated (member-only / age-restricted) — the
+     * unauthenticated player exposed no tracks — so we open a new auto-summary tab that captures it with
+     * the user's real session and closes itself. A `null` from the fast path means "genuinely no captions".
      */
-    function fetchViaInterceptedUrl(videoId) {
+    function onThumbClick(btn, videoId) {
         return __awaiter(this, void 0, void 0, function* () {
-            // If the player already issued a timedtext request we can reuse, don't disturb the user's
-            // caption state; only toggle captions on when we have nothing captured yet.
-            if (!peekTimedtextUrl(videoId))
-                enablePlayerCaptions();
-            const captured = yield waitForTimedtextUrl(videoId, 6000);
-            if (!captured) {
-                warn("no player timedtext request captured (could not enable captions in time?)");
-                return null;
-            }
-            const url = new URL(captured, location.origin);
-            url.searchParams.set("fmt", "json3");
-            const res = yield fetch(url.toString(), { credentials: "include" });
-            if (!res.ok)
-                return null;
-            const body = yield res.text();
-            if (body.trim().length === 0)
-                return null;
-            const segments = parseJson3(JSON.parse(body));
-            return segments.length > 0 ? segments : null;
-        });
-    }
-    //#endregion
-    //#region strategy 2: transcript panel DOM scrape
-    /** The "Show transcript" button, which lives in the description's transcript section. */
-    const transcriptButtonSelector = "ytd-video-description-transcript-section-renderer #primary-button button, "
-        + "ytd-video-description-transcript-section-renderer button";
-    /** The description "...more" expander, which must be opened for the transcript section to render. */
-    const descriptionExpandSelector = "ytd-text-inline-expander #expand, #description #expand, tp-yt-paper-button#expand";
-    /** A rendered transcript line. */
-    const transcriptRowSelector = "transcript-segment-view-model";
-    /**
-     * Opens YouTube's transcript panel so its segments render into the DOM, then waits for them.
-     * The "Show transcript" button only renders after the description is expanded, so we expand it
-     * first if the button isn't already present. Returns true once transcript rows are available.
-     */
-    function openTranscriptPanel() {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            if (document.querySelector(transcriptRowSelector))
-                return true;
-            let button = document.querySelector(transcriptButtonSelector);
-            if (!button) {
-                (_a = document.querySelector(descriptionExpandSelector)) === null || _a === void 0 ? void 0 : _a.click();
-                button = yield waitForSelector(transcriptButtonSelector, 3000);
-            }
-            if (!button) {
-                warn("could not find the 'Show transcript' button");
-                return false;
-            }
-            button.click();
-            return Boolean(yield waitForSelector(transcriptRowSelector, 5000));
-        });
-    }
-    /** Reads already-rendered transcript segments from YouTube's "Show transcript" panel, if open. */
-    function scrapeTranscriptPanel() {
-        var _a, _b, _c, _d, _e, _f;
-        const segments = [];
-        for (const row of document.querySelectorAll(transcriptRowSelector)) {
-            const text = (_c = (_b = (_a = row.querySelector(".ytAttributedStringHost")) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.replace(/\s+/g, " ").trim()) !== null && _c !== void 0 ? _c : "";
-            if (text.length === 0)
-                continue;
-            const stamp = (_f = (_e = (_d = row.querySelector(".ytwTranscriptSegmentViewModelTimestamp")) === null || _d === void 0 ? void 0 : _d.textContent) === null || _e === void 0 ? void 0 : _e.trim()) !== null && _f !== void 0 ? _f : "";
-            segments.push({ start: parseTimestamp(stamp), duration: 0, text });
-        }
-        return segments;
-    }
-    /** Parses a "m:ss" / "h:mm:ss" transcript timestamp into seconds. */
-    function parseTimestamp(stamp) {
-        const parts = stamp.split(":").map(Number);
-        if (parts.some(isNaN))
-            return 0;
-        return parts.reduce((acc, n) => acc * 60 + n, 0);
-    }
-    //#endregion
-    //#region public API
-    /** Formats a number of seconds as `m:ss`, or `h:mm:ss` once it reaches an hour. */
-    function formatTimestamp(totalSeconds) {
-        const s = Math.max(0, Math.floor(totalSeconds));
-        const hrs = Math.floor(s / 3600);
-        const mins = Math.floor((s % 3600) / 60);
-        const secs = s % 60;
-        const pad = (n) => n.toString().padStart(2, "0");
-        return hrs > 0
-            ? `${hrs}:${pad(mins)}:${pad(secs)}`
-            : `${mins}:${pad(secs)}`;
-    }
-    /** Joins segments into `[h:mm:ss] text` lines for time-aware AI analysis. */
-    function toTimedText(segments) {
-        return segments.map(s => `[${formatTimestamp(s.start)}] ${s.text}`).join("\n");
-    }
-    /** Returns the browser UI language plus English as default preferred languages. */
-    function defaultPreferredLangs() {
-        var _a;
-        const langs = [navigator.language, ...((_a = navigator.languages) !== null && _a !== void 0 ? _a : [])].filter(Boolean);
-        return [...new Set([...langs, "en"])];
-    }
-    /**
-     * Whether the currently playing video exposes any caption track. Used to grey out the summary
-     * button up front when there is nothing to summarize.
-     */
-    function hasCaptionsAvailable() {
-        return getCaptionTracks(getPlayerResponse()).length > 0;
-    }
-    /**
-     * Captures subtitles for the currently playing video using page-based strategies.
-     * Returns `null` if the video has no captions available at all.
-     *
-     * @throws if a track was found but every strategy failed to produce text.
-     */
-    function getCurrentSubtitles() {
-        return __awaiter(this, arguments, void 0, function* (opts = {}) {
-            var _a, _b, _c;
-            const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
-            const resp = getPlayerResponse();
-            const tracks = getCaptionTracks(resp);
-            const track = pickTrack(tracks, preferredLangs);
-            // Strategy 1: intercept the player's own timedtext request (carries a valid PoToken and the
-            // user's session, so it works on member-only / exp=xpe videos).
-            if (track) {
-                let segments = null;
+            if (btn.classList.contains("yfas-busy"))
+                return;
+            setBusy$1(btn, true);
+            try {
+                const cfg = config.getData();
+                const preferredLangs = cfg.preferredLangs.split(",").map(s => s.trim()).filter(Boolean);
+                const opts = preferredLangs.length > 0 ? { preferredLangs } : {};
+                let result;
                 try {
-                    segments = yield fetchViaInterceptedUrl((_b = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _b === void 0 ? void 0 : _b.videoId);
+                    result = yield getSubtitlesForVideo(videoId, opts);
                 }
                 catch (err) {
-                    warn("intercepted-timedtext fetch failed:", err);
+                    // Gated video: open a new tab that captures it with the user's real session and closes itself.
+                    // The user's feed tab stays put (scroll position preserved).
+                    warn(`ANDROID off-page capture failed for ${videoId}; opening an auto-summary tab:`, err);
+                    openAutoSummaryTab(videoId);
+                    return;
                 }
-                if (segments && segments.length > 0) {
-                    return {
-                        lang: track.languageCode,
-                        trackName: trackName(track),
-                        autoGenerated: track.kind === "asr",
-                        segments,
-                        text: segments.map(s => s.text).join("\n"),
-                        timedText: toTimedText(segments),
-                        source: "intercept-timedtext",
-                    };
+                if (!result) {
+                    warn(`No captions are available for video ${videoId}.`);
+                    void reportFailure({ context: "youtube:thumbnail:no-captions", userMessage: t("error.noCaptions") });
+                    return;
                 }
+                log(`Captured ${result.segments.length} subtitle lines off-page for ${videoId} `
+                    + `(${result.trackName}, lang=${result.lang}).`);
+                yield stashSummaryPayload({
+                    prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, result.videoTitle || videoId, result.videoUrl),
+                    autoSubmit: cfg.autoSubmit,
+                    title: result.videoTitle,
+                    createdAt: Date.now(),
+                });
+                openInTab(getProviderById(cfg.provider).newChatUrl, false);
             }
-            // Strategy 2: open + scrape YouTube's own transcript panel.
-            yield openTranscriptPanel();
-            const panelSegments = scrapeTranscriptPanel();
-            if (panelSegments.length > 0) {
-                return {
-                    lang: (_c = track === null || track === void 0 ? void 0 : track.languageCode) !== null && _c !== void 0 ? _c : "unknown",
-                    trackName: track ? trackName(track) : "Transcript",
-                    autoGenerated: (track === null || track === void 0 ? void 0 : track.kind) === "asr",
-                    segments: panelSegments,
-                    text: panelSegments.map(s => s.text).join("\n"),
-                    timedText: toTimedText(panelSegments),
-                    source: "transcript-panel",
-                };
+            catch (err) {
+                error(`Failed to summarize video ${videoId} off-page:`, err);
+                void reportFailure({ context: "youtube:thumbnail:capture-error" });
             }
-            if (!track)
-                return null; // no captions at all
-            throw new Error("Found a caption track but could not capture its text (PoToken-gated and transcript panel unavailable)");
+            finally {
+                setBusy$1(btn, false);
+            }
         });
     }
-    //#endregion
+    /** Lazily injects a button when the pointer first enters a thumbnail (handles infinite scroll for free). */
+    function onPointerOver(e) {
+        var _a;
+        const target = e.target;
+        const anchor = (_a = target === null || target === void 0 ? void 0 : target.closest) === null || _a === void 0 ? void 0 : _a.call(target, thumbnailAnchorSelector);
+        if (anchor)
+            injectButton(anchor);
+    }
+    /** Re-applies the current interface language to all already-injected overlay buttons. */
+    function relabelButtons() {
+        const label = buttonLabel();
+        for (const btn of document.querySelectorAll(`.${btnClass}`)) {
+            btn.title = label;
+            btn.setAttribute("aria-label", label);
+        }
+    }
+    /** Registers the thumbnail overlay. Call once on the YouTube side after DOM load. */
+    function initThumbnailButtons() {
+        addStyle(thumbnailStyle, "yfas-thumb");
+        // Event delegation over the whole body: cheaper than observing every list container, and it
+        // naturally covers thumbnails added later by SPA navigation and infinite scroll.
+        document.body.addEventListener("pointerover", onPointerOver, { capture: true, passive: true });
+        window.addEventListener("yfas-lang-changed", relabelButtons);
+    }
+    const thumbnailStyle = `
+.${hostClass} {
+  position: relative;
+}
+.${btnClass} {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.72);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+.${btnClass}:hover {
+  background: rgba(0, 0, 0, 0.92);
+}
+.${btnClass} svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.${hostClass}:hover .${btnClass},
+.${btnClass}:focus-visible {
+  opacity: 1;
+}
+.${btnClass}.yfas-busy {
+  opacity: 1;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.88);
+}
+.${btnClass}.yfas-busy svg {
+  animation: yfas-spin 0.8s linear infinite;
+}
+@keyframes yfas-spin {
+  to { transform: rotate(360deg); }
+}
+`;
 
     /**
      * YouTube-side logic: injects the summary button into the watch page's action row
@@ -2315,6 +2762,8 @@ select.yfas-input {
     /** Registers the button injection. Call once on the YouTube side after DOM load. */
     function initYoutube() {
         addStyle(buttonStyle, "yfas-button");
+        // Off-page trigger: sparkle button on video thumbnails across list surfaces (home/search/related).
+        initThumbnailButtons();
         void ensureSummaryButton();
         // The action row is re-rendered on SPA navigation, so re-insert after each navigation.
         window.addEventListener("yt-navigate-finish", () => void ensureSummaryButton());
@@ -2426,26 +2875,7 @@ select.yfas-input {
             const iconEl = btn.querySelector(".ytSpecButtonShapeNextIcon");
             setBusy(btn, iconEl, true);
             try {
-                const cfg = config.getData();
-                const preferredLangs = cfg.preferredLangs.split(",").map(s => s.trim()).filter(Boolean);
-                const result = yield getCurrentSubtitles(preferredLangs.length > 0 ? { preferredLangs } : {});
-                if (!result) {
-                    warn("No captions are available for this video.");
-                    void reportFailure({
-                        context: "youtube:no-captions",
-                        userMessage: t("error.noCaptions"),
-                    });
-                    return;
-                }
-                log(`Captured ${result.segments.length} subtitle lines `
-                    + `(${result.trackName}, lang=${result.lang}, via ${result.source}).`);
-                yield stashSummaryPayload({
-                    prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps),
-                    autoSubmit: cfg.autoSubmit,
-                    title: getVideoTitle(),
-                    createdAt: Date.now(),
-                });
-                openInTab(getProviderById(cfg.provider).newChatUrl, false); // foreground the AI provider tab
+                yield captureAndHandoff();
                 // Success: restore silently (handled in finally), no extra indicator.
             }
             catch (err) {
@@ -2464,23 +2894,6 @@ select.yfas-input {
             return;
         iconEl.classList.toggle("yfas-spin", busy);
         setInnerHtml(iconEl, busy ? loadingIcon : sparkleIcon);
-    }
-    /** Builds the final prompt by substituting the template tokens with the video's data. */
-    function buildPrompt(result, template, includeTimestamps) {
-        const transcript = includeTimestamps ? result.timedText : result.text;
-        // Empty template = follow the interface language: fall back to the active locale's default prompt.
-        return (template.trim() || t("prompt.default"))
-            .split("{{title}}").join(getVideoTitle())
-            .split("{{url}}").join(location.href)
-            .split("{{transcript}}").join(transcript);
-    }
-    /** Reads the current video's title from the watch page, falling back to the document title. */
-    function getVideoTitle() {
-        var _a, _b;
-        const fromMeta = (_b = (_a = document.querySelector("ytd-watch-metadata h1")) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
-        if (fromMeta)
-            return fromMeta;
-        return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
     }
     const buttonStyle = `
 .yfas-split {
@@ -2531,6 +2944,11 @@ select.yfas-input {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 log(`Initializing ${scriptInfo.name} v${scriptInfo.version} (#${buildNumber})...`);
+                // A watch tab we opened to summarize a gated video (see auto-summarize.ts): capture + close, no UI.
+                if (location.hostname.endsWith("youtube.com") && isAutoSummaryRequest()) {
+                    void runAutoSummary();
+                    return;
+                }
                 // post-build these double quotes are replaced by backticks (because if backticks are used here, the bundler converts them to double quotes)
                 addStyle("#{{GLOBAL_STYLE}}", "global");
                 registerDevCommands();

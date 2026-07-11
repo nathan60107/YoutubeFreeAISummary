@@ -10,7 +10,14 @@
       "*.env.template": "dotenv",
     },
     "editor.tabSize": 2,
-  
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+    },
+    "eslint.validate": [
+      "javascript",
+      "typescript",
+    ],
+
     // requires extension: fabiospampinato.vscode-highlight
     "highlight.regexes": {
       "(TODO(\\((\\s|\\d|\\w|[,.-_+*&])+\\))?:?)": { // TODO: or TODO or TODO(xy): but not todo or todo:

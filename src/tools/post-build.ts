@@ -163,8 +163,10 @@ ${devDirectives ? "\n" + devDirectives : ""}
     else
       userscript = userscript.replace(/sourceMappingURL=/gm, `sourceMappingURL=http://localhost:${devServerPort}/`);
 
-    // insert userscript header and final newline
-    const finalUserscript = `${header}\n${userscript}${userscript.endsWith("\n") ? "" : "\n"}`;
+    // insert userscript header and final newline, then normalize line endings to LF
+    // (tslib's injected helpers ship with CRLF, which would otherwise leak into the output)
+    const finalUserscript = `${header}\n${userscript}${userscript.endsWith("\n") ? "" : "\n"}`
+      .replace(/\r\n?/g, "\n");
 
     await writeFile(scriptPath, finalUserscript);
 
