@@ -11,7 +11,7 @@ export const de: Translations = {
   "settings.language.hint": "Sprache, in der die Oberfläche dieses Skripts angezeigt wird",
   "settings.language.auto": "Browser folgen",
   "settings.prompt.label": "Prompt-Vorlage",
-  "settings.prompt.hint": "Variablen: <code>{{title}}</code> Titel, <code>{{url}}</code> Link, <code>{{transcript}}</code> Untertitel",
+  "settings.prompt.hint": "Variablen: <code>{{title}}</code> Titel, <code>{{url}}</code> Link, <code>{{language}}</code> Ausgabesprache, <code>{{transcript}}</code> Untertitel",
   "settings.langs.label": "Bevorzugte Untertitelsprachen",
   "settings.langs.hint": "Kommagetrennte Sprachcodes, z. B. <code>zh-TW, ja, en</code>. Leer = der Browsersprache folgen",
   "settings.langs.placeholder": "Leer = automatisch",
@@ -52,7 +52,7 @@ export const de: Translations = {
   "dev.clearFailures": "[dev] Fehlerzähler zurücksetzen",
 
   "prompt.default": [
-    "Fasse die wichtigsten Punkte der folgenden Untertitel eines YouTube-Videos (mit Zeitstempeln) zusammen und gib zu jedem Punkt den entsprechenden Zeitstempel an.",
+    "Fasse die wichtigsten Punkte der folgenden Untertitel eines YouTube-Videos (mit Zeitstempeln) zusammen und gib zu jedem Punkt den entsprechenden Zeitstempel an. Schreibe die Zusammenfassung auf {{language}}.",
     "",
     "Titel: {{title}}",
     "URL: {{url}}",

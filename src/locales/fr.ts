@@ -11,7 +11,7 @@ export const fr: Translations = {
   "settings.language.hint": "Langue d’affichage de l’interface de ce script",
   "settings.language.auto": "Suivre le navigateur",
   "settings.prompt.label": "Modèle de prompt",
-  "settings.prompt.hint": "Variables : <code>{{title}}</code> titre, <code>{{url}}</code> lien, <code>{{transcript}}</code> sous-titres",
+  "settings.prompt.hint": "Variables : <code>{{title}}</code> titre, <code>{{url}}</code> lien, <code>{{language}}</code> langue de sortie, <code>{{transcript}}</code> sous-titres",
   "settings.langs.label": "Langues de sous-titres préférées",
   "settings.langs.hint": "Codes de langue séparés par des virgules, p. ex. <code>zh-TW, ja, en</code>. Vide = suivre la langue du navigateur",
   "settings.langs.placeholder": "Vide = automatique",
@@ -52,7 +52,7 @@ export const fr: Translations = {
   "dev.clearFailures": "[dev] Réinitialiser le compteur d’échecs",
 
   "prompt.default": [
-    "Résume les points clés des sous-titres suivants d’une vidéo YouTube (avec horodatage), et indique l’horodatage correspondant à chaque point.",
+    "Résume les points clés des sous-titres suivants d’une vidéo YouTube (avec horodatage), et indique l’horodatage correspondant à chaque point. Rédige le résumé en {{language}}.",
     "",
     "Titre : {{title}}",
     "URL : {{url}}",

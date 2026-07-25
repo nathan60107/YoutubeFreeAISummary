@@ -11,7 +11,7 @@ export const ptBR: Translations = {
   "settings.language.hint": "Idioma em que a interface deste script é exibida",
   "settings.language.auto": "Seguir o navegador",
   "settings.prompt.label": "Modelo de prompt",
-  "settings.prompt.hint": "Variáveis: <code>{{title}}</code> título, <code>{{url}}</code> link, <code>{{transcript}}</code> legendas",
+  "settings.prompt.hint": "Variáveis: <code>{{title}}</code> título, <code>{{url}}</code> link, <code>{{language}}</code> idioma de saída, <code>{{transcript}}</code> legendas",
   "settings.langs.label": "Idiomas de legenda preferidos",
   "settings.langs.hint": "Códigos de idioma separados por vírgula, ex.: <code>zh-TW, ja, en</code>. Vazio = seguir o idioma do navegador",
   "settings.langs.placeholder": "Vazio = automático",
@@ -52,7 +52,7 @@ export const ptBR: Translations = {
   "dev.clearFailures": "[dev] Limpar contagem de falhas",
 
   "prompt.default": [
-    "Resuma os pontos principais das seguintes legendas de um vídeo do YouTube (com marcações de tempo) e indique a marcação de tempo correspondente a cada ponto.",
+    "Resuma os pontos principais das seguintes legendas de um vídeo do YouTube (com marcações de tempo) e indique a marcação de tempo correspondente a cada ponto. Escreva o resumo em {{language}}.",
     "",
     "Título: {{title}}",
     "URL: {{url}}",

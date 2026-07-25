@@ -11,7 +11,7 @@ export const ko: Translations = {
   "settings.language.hint": "이 스크립트 화면을 표시할 언어",
   "settings.language.auto": "브라우저 따르기",
   "settings.prompt.label": "프롬프트 템플릿",
-  "settings.prompt.hint": "사용 가능한 변수: <code>{{title}}</code> 제목, <code>{{url}}</code> 링크, <code>{{transcript}}</code> 자막",
+  "settings.prompt.hint": "사용 가능한 변수: <code>{{title}}</code> 제목, <code>{{url}}</code> 링크, <code>{{language}}</code> 출력 언어, <code>{{transcript}}</code> 자막",
   "settings.langs.label": "선호 자막 언어",
   "settings.langs.hint": "쉼표로 구분한 언어 코드, 예: <code>zh-TW, ja, en</code>. 비워 두면 브라우저 언어를 따릅니다",
   "settings.langs.placeholder": "비워 두면 자동",
@@ -52,7 +52,7 @@ export const ko: Translations = {
   "dev.clearFailures": "[dev] 실패 횟수 초기화",
 
   "prompt.default": [
-    "다음 YouTube 동영상 자막(타임스탬프 포함)을 바탕으로 핵심 내용을 요약하고, 각 항목에 해당하는 타임스탬프를 표시해 주세요.",
+    "다음 YouTube 동영상 자막(타임스탬프 포함)을 바탕으로 핵심 내용을 요약하고, 각 항목에 해당하는 타임스탬프를 표시해 주세요. 요약은 {{language}}로 작성해 주세요.",
     "",
     "제목: {{title}}",
     "URL: {{url}}",

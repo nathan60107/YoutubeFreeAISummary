@@ -11,7 +11,7 @@ export const ru: Translations = {
   "settings.language.hint": "Язык, на котором отображается интерфейс этого скрипта",
   "settings.language.auto": "Как в браузере",
   "settings.prompt.label": "Шаблон запроса",
-  "settings.prompt.hint": "Переменные: <code>{{title}}</code> заголовок, <code>{{url}}</code> ссылка, <code>{{transcript}}</code> субтитры",
+  "settings.prompt.hint": "Переменные: <code>{{title}}</code> заголовок, <code>{{url}}</code> ссылка, <code>{{language}}</code> язык ответа, <code>{{transcript}}</code> субтитры",
   "settings.langs.label": "Предпочитаемые языки субтитров",
   "settings.langs.hint": "Коды языков через запятую, например <code>zh-TW, ja, en</code>. Пусто = следовать языку браузера",
   "settings.langs.placeholder": "Пусто = автоматически",
@@ -52,7 +52,7 @@ export const ru: Translations = {
   "dev.clearFailures": "[dev] Сбросить счётчик ошибок",
 
   "prompt.default": [
-    "Кратко изложи ключевые моменты по следующим субтитрам видео с YouTube (с тайм-кодами) и укажи соответствующий тайм-код для каждого пункта.",
+    "Кратко изложи ключевые моменты по следующим субтитрам видео с YouTube (с тайм-кодами) и укажи соответствующий тайм-код для каждого пункта. Ответ дай на языке: {{language}}.",
     "",
     "Заголовок: {{title}}",
     "Ссылка: {{url}}",

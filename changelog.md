@@ -1,3 +1,6 @@
+# 0.9.0
+- Summarize in your interface language: the default prompt now tells the AI which language to answer in (via a new `{{language}}` token), so a foreign-language video is no longer summarized in an unexpected language
+
 # 0.8.4
 - Summarize member-only and age-restricted videos that previously failed: the player's first caption request on these PoToken-gated videos is issued without a token and comes back empty, so the script now re-triggers captions until the player makes a token-bearing request it can read
 

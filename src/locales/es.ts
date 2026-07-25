@@ -11,7 +11,7 @@ export const es: Translations = {
   "settings.language.hint": "Idioma en el que se muestra la interfaz de este script",
   "settings.language.auto": "Seguir el navegador",
   "settings.prompt.label": "Plantilla del prompt",
-  "settings.prompt.hint": "Variables: <code>{{title}}</code> título, <code>{{url}}</code> enlace, <code>{{transcript}}</code> subtítulos",
+  "settings.prompt.hint": "Variables: <code>{{title}}</code> título, <code>{{url}}</code> enlace, <code>{{language}}</code> idioma de salida, <code>{{transcript}}</code> subtítulos",
   "settings.langs.label": "Idiomas de subtítulos preferidos",
   "settings.langs.hint": "Códigos de idioma separados por comas, p. ej. <code>zh-TW, ja, en</code>. Vacío = seguir el idioma del navegador",
   "settings.langs.placeholder": "Vacío = automático",
@@ -52,7 +52,7 @@ export const es: Translations = {
   "dev.clearFailures": "[dev] Borrar el contador de fallos",
 
   "prompt.default": [
-    "Resume los puntos clave de los siguientes subtítulos de un vídeo de YouTube (con marcas de tiempo), e indica la marca de tiempo correspondiente a cada punto.",
+    "Resume los puntos clave de los siguientes subtítulos de un vídeo de YouTube (con marcas de tiempo), e indica la marca de tiempo correspondiente a cada punto. Escribe el resumen en {{language}}.",
     "",
     "Título: {{title}}",
     "URL: {{url}}",

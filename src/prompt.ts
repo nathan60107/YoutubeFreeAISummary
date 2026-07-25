@@ -5,7 +5,7 @@
  * current watch page's DOM.
  */
 
-import { t } from "./i18n";
+import { getActiveLanguage, getLanguageLabel, t } from "./i18n";
 import type { SubtitleResult } from "./subtitle-core";
 
 /**
@@ -23,8 +23,10 @@ export function buildPrompt(
   url: string,
 ): string {
   const transcript = includeTimestamps ? result.timedText : result.text;
+  const language = getLanguageLabel(getActiveLanguage());
   return (template.trim() || t("prompt.default"))
     .split("{{title}}").join(title)
     .split("{{url}}").join(url)
+    .split("{{language}}").join(language)
     .split("{{transcript}}").join(transcript);
 }

@@ -11,7 +11,7 @@ export const zhTW: Translations = {
   "settings.language.hint": "此腳本介面顯示的語言",
   "settings.language.auto": "跟隨瀏覽器",
   "settings.prompt.label": "提示詞模板",
-  "settings.prompt.hint": "可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{transcript}}</code> 字幕",
+  "settings.prompt.hint": "可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{language}}</code> 輸出語言、<code>{{transcript}}</code> 字幕",
   "settings.langs.label": "偏好字幕語言",
   "settings.langs.hint": "逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言",
   "settings.langs.placeholder": "留空＝自動",
@@ -52,7 +52,7 @@ export const zhTW: Translations = {
   "dev.clearFailures": "[dev] 清除失敗計數",
 
   "prompt.default": [
-    "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。",
+    "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。請以{{language}}輸出摘要。",
     "",
     "影片標題：{{title}}",
     "影片連結：{{url}}",

@@ -65,6 +65,14 @@ export const supportedLanguages: readonly { code: LangCode; label: string }[] = 
 
 const langCodes = supportedLanguages.map(l => l.code);
 
+/**
+ * The endonym (native name) of a locale, e.g. `"繁體中文"` for `zh-TW`. Used to resolve the
+ * `{{language}}` prompt token so the AI is told, in a name it recognises, which language to answer in.
+ */
+export function getLanguageLabel(lang: LangCode): string {
+  return supportedLanguages.find(l => l.code === lang)?.label ?? lang;
+}
+
 /** Active locale, resolved by {@linkcode initI18n}. Defaults to English until then. */
 let activeLang: LangCode = "en";
 

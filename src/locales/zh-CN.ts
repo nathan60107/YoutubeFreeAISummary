@@ -11,7 +11,7 @@ export const zhCN: Translations = {
   "settings.language.hint": "此脚本界面显示的语言",
   "settings.language.auto": "跟随浏览器",
   "settings.prompt.label": "提示词模板",
-  "settings.prompt.hint": "可用变量：<code>{{title}}</code> 标题、<code>{{url}}</code> 链接、<code>{{transcript}}</code> 字幕",
+  "settings.prompt.hint": "可用变量：<code>{{title}}</code> 标题、<code>{{url}}</code> 链接、<code>{{language}}</code> 输出语言、<code>{{transcript}}</code> 字幕",
   "settings.langs.label": "偏好字幕语言",
   "settings.langs.hint": "逗号分隔的语言代码，例如 <code>zh-TW, ja, en</code>。留空＝跟随浏览器语言",
   "settings.langs.placeholder": "留空＝自动",
@@ -52,7 +52,7 @@ export const zhCN: Translations = {
   "dev.clearFailures": "[dev] 清除失败计数",
 
   "prompt.default": [
-    "请依据以下 YouTube 视频字幕（含时间轴）做重点摘要，并在每个重点标注对应的时间戳。",
+    "请依据以下 YouTube 视频字幕（含时间轴）做重点摘要，并在每个重点标注对应的时间戳。请以{{language}}输出摘要。",
     "",
     "视频标题：{{title}}",
     "视频链接：{{url}}",

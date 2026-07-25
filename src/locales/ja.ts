@@ -11,7 +11,7 @@ export const ja: Translations = {
   "settings.language.hint": "このスクリプトの画面を表示する言語",
   "settings.language.auto": "ブラウザに従う",
   "settings.prompt.label": "プロンプトのテンプレート",
-  "settings.prompt.hint": "使用できる変数：<code>{{title}}</code> タイトル、<code>{{url}}</code> リンク、<code>{{transcript}}</code> 字幕",
+  "settings.prompt.hint": "使用できる変数：<code>{{title}}</code> タイトル、<code>{{url}}</code> リンク、<code>{{language}}</code> 出力言語、<code>{{transcript}}</code> 字幕",
   "settings.langs.label": "優先する字幕の言語",
   "settings.langs.hint": "カンマ区切りの言語コード（例：<code>zh-TW, ja, en</code>）。空欄＝ブラウザの言語に従う",
   "settings.langs.placeholder": "空欄＝自動",
@@ -52,7 +52,7 @@ export const ja: Translations = {
   "dev.clearFailures": "[dev] 失敗カウントをクリア",
 
   "prompt.default": [
-    "以下の YouTube 動画の字幕（タイムスタンプ付き）をもとに要点を要約し、各要点に対応するタイムスタンプを付記してください。",
+    "以下の YouTube 動画の字幕（タイムスタンプ付き）をもとに要点を要約し、各要点に対応するタイムスタンプを付記してください。要約は{{language}}で出力してください。",
     "",
     "タイトル：{{title}}",
     "URL：{{url}}",

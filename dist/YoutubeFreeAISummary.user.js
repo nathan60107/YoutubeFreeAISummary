@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.8.4
+// @version           0.9.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=408ca3f
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=861060f
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=408ca3f
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=861060f
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "github";
-    const buildNumberRaw = "408ca3f";
+    const buildNumberRaw = "861060f";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -147,7 +147,7 @@
         "settings.language.hint": "Language this script's own interface is shown in",
         "settings.language.auto": "Follow browser",
         "settings.prompt.label": "Prompt template",
-        "settings.prompt.hint": "Variables: <code>{{title}}</code> title, <code>{{url}}</code> link, <code>{{transcript}}</code> subtitles",
+        "settings.prompt.hint": "Variables: <code>{{title}}</code> title, <code>{{url}}</code> link, <code>{{language}}</code> output language, <code>{{transcript}}</code> subtitles",
         "settings.langs.label": "Preferred subtitle languages",
         "settings.langs.hint": "Comma-separated language codes, e.g. <code>zh-TW, ja, en</code>. Empty = follow browser language",
         "settings.langs.placeholder": "Empty = auto",
@@ -188,7 +188,7 @@
         "dev.clearFailures": "[dev] Clear failure count",
         // Default summary prompt sent to the AI. Keep the {{title}}/{{url}}/{{transcript}} tokens verbatim.
         "prompt.default": [
-            "Summarize the key points of the following YouTube video subtitles (with timestamps), and mark the corresponding timestamp for each point.",
+            "Summarize the key points of the following YouTube video subtitles (with timestamps), and mark the corresponding timestamp for each point. Write the summary in {{language}}.",
             "",
             "Title: {{title}}",
             "URL: {{url}}",
@@ -208,7 +208,7 @@
         "settings.language.hint": "此腳本介面顯示的語言",
         "settings.language.auto": "跟隨瀏覽器",
         "settings.prompt.label": "提示詞模板",
-        "settings.prompt.hint": "可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{transcript}}</code> 字幕",
+        "settings.prompt.hint": "可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{language}}</code> 輸出語言、<code>{{transcript}}</code> 字幕",
         "settings.langs.label": "偏好字幕語言",
         "settings.langs.hint": "逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言",
         "settings.langs.placeholder": "留空＝自動",
@@ -242,7 +242,7 @@
         "provider.grok.note": "品質次於 AI Studio，結果偶有小瑕疵。",
         "dev.clearFailures": "[dev] 清除失敗計數",
         "prompt.default": [
-            "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。",
+            "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。請以{{language}}輸出摘要。",
             "",
             "影片標題：{{title}}",
             "影片連結：{{url}}",
@@ -262,7 +262,7 @@
         "settings.language.hint": "此脚本界面显示的语言",
         "settings.language.auto": "跟随浏览器",
         "settings.prompt.label": "提示词模板",
-        "settings.prompt.hint": "可用变量：<code>{{title}}</code> 标题、<code>{{url}}</code> 链接、<code>{{transcript}}</code> 字幕",
+        "settings.prompt.hint": "可用变量：<code>{{title}}</code> 标题、<code>{{url}}</code> 链接、<code>{{language}}</code> 输出语言、<code>{{transcript}}</code> 字幕",
         "settings.langs.label": "偏好字幕语言",
         "settings.langs.hint": "逗号分隔的语言代码，例如 <code>zh-TW, ja, en</code>。留空＝跟随浏览器语言",
         "settings.langs.placeholder": "留空＝自动",
@@ -296,7 +296,7 @@
         "provider.grok.note": "品质次于 AI Studio，结果偶有小瑕疵。",
         "dev.clearFailures": "[dev] 清除失败计数",
         "prompt.default": [
-            "请依据以下 YouTube 视频字幕（含时间轴）做重点摘要，并在每个重点标注对应的时间戳。",
+            "请依据以下 YouTube 视频字幕（含时间轴）做重点摘要，并在每个重点标注对应的时间戳。请以{{language}}输出摘要。",
             "",
             "视频标题：{{title}}",
             "视频链接：{{url}}",
@@ -316,7 +316,7 @@
         "settings.language.hint": "このスクリプトの画面を表示する言語",
         "settings.language.auto": "ブラウザに従う",
         "settings.prompt.label": "プロンプトのテンプレート",
-        "settings.prompt.hint": "使用できる変数：<code>{{title}}</code> タイトル、<code>{{url}}</code> リンク、<code>{{transcript}}</code> 字幕",
+        "settings.prompt.hint": "使用できる変数：<code>{{title}}</code> タイトル、<code>{{url}}</code> リンク、<code>{{language}}</code> 出力言語、<code>{{transcript}}</code> 字幕",
         "settings.langs.label": "優先する字幕の言語",
         "settings.langs.hint": "カンマ区切りの言語コード（例：<code>zh-TW, ja, en</code>）。空欄＝ブラウザの言語に従う",
         "settings.langs.placeholder": "空欄＝自動",
@@ -350,7 +350,7 @@
         "provider.grok.note": "品質は AI Studio に次ぎ、結果にまれに小さな不備があります。",
         "dev.clearFailures": "[dev] 失敗カウントをクリア",
         "prompt.default": [
-            "以下の YouTube 動画の字幕（タイムスタンプ付き）をもとに要点を要約し、各要点に対応するタイムスタンプを付記してください。",
+            "以下の YouTube 動画の字幕（タイムスタンプ付き）をもとに要点を要約し、各要点に対応するタイムスタンプを付記してください。要約は{{language}}で出力してください。",
             "",
             "タイトル：{{title}}",
             "URL：{{url}}",
@@ -370,7 +370,7 @@
         "settings.language.hint": "이 스크립트 화면을 표시할 언어",
         "settings.language.auto": "브라우저 따르기",
         "settings.prompt.label": "프롬프트 템플릿",
-        "settings.prompt.hint": "사용 가능한 변수: <code>{{title}}</code> 제목, <code>{{url}}</code> 링크, <code>{{transcript}}</code> 자막",
+        "settings.prompt.hint": "사용 가능한 변수: <code>{{title}}</code> 제목, <code>{{url}}</code> 링크, <code>{{language}}</code> 출력 언어, <code>{{transcript}}</code> 자막",
         "settings.langs.label": "선호 자막 언어",
         "settings.langs.hint": "쉼표로 구분한 언어 코드, 예: <code>zh-TW, ja, en</code>. 비워 두면 브라우저 언어를 따릅니다",
         "settings.langs.placeholder": "비워 두면 자동",
@@ -404,7 +404,7 @@
         "provider.grok.note": "품질은 AI Studio보다 낮고 결과에 가끔 사소한 결함이 있습니다.",
         "dev.clearFailures": "[dev] 실패 횟수 초기화",
         "prompt.default": [
-            "다음 YouTube 동영상 자막(타임스탬프 포함)을 바탕으로 핵심 내용을 요약하고, 각 항목에 해당하는 타임스탬프를 표시해 주세요.",
+            "다음 YouTube 동영상 자막(타임스탬프 포함)을 바탕으로 핵심 내용을 요약하고, 각 항목에 해당하는 타임스탬프를 표시해 주세요. 요약은 {{language}}로 작성해 주세요.",
             "",
             "제목: {{title}}",
             "URL: {{url}}",
@@ -424,7 +424,7 @@
         "settings.language.hint": "Idioma en el que se muestra la interfaz de este script",
         "settings.language.auto": "Seguir el navegador",
         "settings.prompt.label": "Plantilla del prompt",
-        "settings.prompt.hint": "Variables: <code>{{title}}</code> título, <code>{{url}}</code> enlace, <code>{{transcript}}</code> subtítulos",
+        "settings.prompt.hint": "Variables: <code>{{title}}</code> título, <code>{{url}}</code> enlace, <code>{{language}}</code> idioma de salida, <code>{{transcript}}</code> subtítulos",
         "settings.langs.label": "Idiomas de subtítulos preferidos",
         "settings.langs.hint": "Códigos de idioma separados por comas, p. ej. <code>zh-TW, ja, en</code>. Vacío = seguir el idioma del navegador",
         "settings.langs.placeholder": "Vacío = automático",
@@ -458,7 +458,7 @@
         "provider.grok.note": "Calidad inferior a AI Studio; los resultados a veces tienen pequeños defectos.",
         "dev.clearFailures": "[dev] Borrar el contador de fallos",
         "prompt.default": [
-            "Resume los puntos clave de los siguientes subtítulos de un vídeo de YouTube (con marcas de tiempo), e indica la marca de tiempo correspondiente a cada punto.",
+            "Resume los puntos clave de los siguientes subtítulos de un vídeo de YouTube (con marcas de tiempo), e indica la marca de tiempo correspondiente a cada punto. Escribe el resumen en {{language}}.",
             "",
             "Título: {{title}}",
             "URL: {{url}}",
@@ -478,7 +478,7 @@
         "settings.language.hint": "Langue d’affichage de l’interface de ce script",
         "settings.language.auto": "Suivre le navigateur",
         "settings.prompt.label": "Modèle de prompt",
-        "settings.prompt.hint": "Variables : <code>{{title}}</code> titre, <code>{{url}}</code> lien, <code>{{transcript}}</code> sous-titres",
+        "settings.prompt.hint": "Variables : <code>{{title}}</code> titre, <code>{{url}}</code> lien, <code>{{language}}</code> langue de sortie, <code>{{transcript}}</code> sous-titres",
         "settings.langs.label": "Langues de sous-titres préférées",
         "settings.langs.hint": "Codes de langue séparés par des virgules, p. ex. <code>zh-TW, ja, en</code>. Vide = suivre la langue du navigateur",
         "settings.langs.placeholder": "Vide = automatique",
@@ -512,7 +512,7 @@
         "provider.grok.note": "Qualité inférieure à AI Studio ; les résultats présentent parfois de petits défauts.",
         "dev.clearFailures": "[dev] Réinitialiser le compteur d’échecs",
         "prompt.default": [
-            "Résume les points clés des sous-titres suivants d’une vidéo YouTube (avec horodatage), et indique l’horodatage correspondant à chaque point.",
+            "Résume les points clés des sous-titres suivants d’une vidéo YouTube (avec horodatage), et indique l’horodatage correspondant à chaque point. Rédige le résumé en {{language}}.",
             "",
             "Titre : {{title}}",
             "URL : {{url}}",
@@ -532,7 +532,7 @@
         "settings.language.hint": "Sprache, in der die Oberfläche dieses Skripts angezeigt wird",
         "settings.language.auto": "Browser folgen",
         "settings.prompt.label": "Prompt-Vorlage",
-        "settings.prompt.hint": "Variablen: <code>{{title}}</code> Titel, <code>{{url}}</code> Link, <code>{{transcript}}</code> Untertitel",
+        "settings.prompt.hint": "Variablen: <code>{{title}}</code> Titel, <code>{{url}}</code> Link, <code>{{language}}</code> Ausgabesprache, <code>{{transcript}}</code> Untertitel",
         "settings.langs.label": "Bevorzugte Untertitelsprachen",
         "settings.langs.hint": "Kommagetrennte Sprachcodes, z. B. <code>zh-TW, ja, en</code>. Leer = der Browsersprache folgen",
         "settings.langs.placeholder": "Leer = automatisch",
@@ -566,7 +566,7 @@
         "provider.grok.note": "Qualität unter AI Studio; die Ergebnisse haben gelegentlich kleine Mängel.",
         "dev.clearFailures": "[dev] Fehlerzähler zurücksetzen",
         "prompt.default": [
-            "Fasse die wichtigsten Punkte der folgenden Untertitel eines YouTube-Videos (mit Zeitstempeln) zusammen und gib zu jedem Punkt den entsprechenden Zeitstempel an.",
+            "Fasse die wichtigsten Punkte der folgenden Untertitel eines YouTube-Videos (mit Zeitstempeln) zusammen und gib zu jedem Punkt den entsprechenden Zeitstempel an. Schreibe die Zusammenfassung auf {{language}}.",
             "",
             "Titel: {{title}}",
             "URL: {{url}}",
@@ -586,7 +586,7 @@
         "settings.language.hint": "Idioma em que a interface deste script é exibida",
         "settings.language.auto": "Seguir o navegador",
         "settings.prompt.label": "Modelo de prompt",
-        "settings.prompt.hint": "Variáveis: <code>{{title}}</code> título, <code>{{url}}</code> link, <code>{{transcript}}</code> legendas",
+        "settings.prompt.hint": "Variáveis: <code>{{title}}</code> título, <code>{{url}}</code> link, <code>{{language}}</code> idioma de saída, <code>{{transcript}}</code> legendas",
         "settings.langs.label": "Idiomas de legenda preferidos",
         "settings.langs.hint": "Códigos de idioma separados por vírgula, ex.: <code>zh-TW, ja, en</code>. Vazio = seguir o idioma do navegador",
         "settings.langs.placeholder": "Vazio = automático",
@@ -620,7 +620,7 @@
         "provider.grok.note": "Qualidade abaixo do AI Studio; os resultados ocasionalmente têm pequenas falhas.",
         "dev.clearFailures": "[dev] Limpar contagem de falhas",
         "prompt.default": [
-            "Resuma os pontos principais das seguintes legendas de um vídeo do YouTube (com marcações de tempo) e indique a marcação de tempo correspondente a cada ponto.",
+            "Resuma os pontos principais das seguintes legendas de um vídeo do YouTube (com marcações de tempo) e indique a marcação de tempo correspondente a cada ponto. Escreva o resumo em {{language}}.",
             "",
             "Título: {{title}}",
             "URL: {{url}}",
@@ -640,7 +640,7 @@
         "settings.language.hint": "Язык, на котором отображается интерфейс этого скрипта",
         "settings.language.auto": "Как в браузере",
         "settings.prompt.label": "Шаблон запроса",
-        "settings.prompt.hint": "Переменные: <code>{{title}}</code> заголовок, <code>{{url}}</code> ссылка, <code>{{transcript}}</code> субтитры",
+        "settings.prompt.hint": "Переменные: <code>{{title}}</code> заголовок, <code>{{url}}</code> ссылка, <code>{{language}}</code> язык ответа, <code>{{transcript}}</code> субтитры",
         "settings.langs.label": "Предпочитаемые языки субтитров",
         "settings.langs.hint": "Коды языков через запятую, например <code>zh-TW, ja, en</code>. Пусто = следовать языку браузера",
         "settings.langs.placeholder": "Пусто = автоматически",
@@ -674,7 +674,7 @@
         "provider.grok.note": "Качество ниже, чем у AI Studio; в результатах изредка встречаются мелкие недочёты.",
         "dev.clearFailures": "[dev] Сбросить счётчик ошибок",
         "prompt.default": [
-            "Кратко изложи ключевые моменты по следующим субтитрам видео с YouTube (с тайм-кодами) и укажи соответствующий тайм-код для каждого пункта.",
+            "Кратко изложи ключевые моменты по следующим субтитрам видео с YouTube (с тайм-кодами) и укажи соответствующий тайм-код для каждого пункта. Ответ дай на языке: {{language}}.",
             "",
             "Заголовок: {{title}}",
             "Ссылка: {{url}}",
@@ -730,6 +730,14 @@
         { code: "ru", label: "Русский" },
     ];
     const langCodes = supportedLanguages.map(l => l.code);
+    /**
+     * The endonym (native name) of a locale, e.g. `"繁體中文"` for `zh-TW`. Used to resolve the
+     * `{{language}}` prompt token so the AI is told, in a name it recognises, which language to answer in.
+     */
+    function getLanguageLabel(lang) {
+        var _a, _b;
+        return (_b = (_a = supportedLanguages.find(l => l.code === lang)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : lang;
+    }
     /** Active locale, resolved by {@linkcode initI18n}. Defaults to English until then. */
     let activeLang = "en";
     /**
@@ -1986,9 +1994,11 @@
      */
     function buildPrompt(result, template, includeTimestamps, title, url) {
         const transcript = includeTimestamps ? result.timedText : result.text;
+        const language = getLanguageLabel(getActiveLanguage());
         return (template.trim() || t("prompt.default"))
             .split("{{title}}").join(title)
             .split("{{url}}").join(url)
+            .split("{{language}}").join(language)
             .split("{{transcript}}").join(transcript);
     }
 
