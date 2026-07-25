@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.8.3
+// @version           0.8.4
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=f012738
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=408ca3f
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=f012738
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=408ca3f
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "greasyfork";
-    const buildNumberRaw = "f012738";
+    const buildNumberRaw = "408ca3f";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -909,6 +909,15 @@
         };
         elem.addEventListener("click", proxListener, listenerOptions);
         elem.addEventListener("keydown", proxListener, listenerOptions);
+    }
+    /**
+     * Resolves after `ms` milliseconds. Backed by the page realm's timer (via `unsafeWindow`): the
+     * sandbox's own `setTimeout` throws `NS_ERROR_NOT_INITIALIZED` early in a tab opened with
+     * `window.open` (its initial inner window is already stale), whereas the live page window's works.
+     */
+    function delay(ms) {
+        const pageWindow = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window);
+        return new Promise(resolve => pageWindow.setTimeout(resolve, ms));
     }
     /** Resolves with the first element matching `selector`, polling until found or `timeoutMs` elapses (then `null`). */
     function waitForSelector(selector, timeoutMs = 4000, intervalMs = 100) {
@@ -1995,24 +2004,13 @@
     const timedtextMarker = "/api/timedtext";
     /** Page realm, where the player's `fetch` / `XMLHttpRequest` live. */
     const pageWindow$1 = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window);
-    /** Most recently observed working timedtext URL (from the page's own requests). */
+    /** Most recently observed timedtext URL (from the page's own requests). */
     let latestUrl = null;
-    /** One-shot resolvers waiting for the next matching URL. */
-    const waiters = [];
     let installed = false;
-    /** Records a captured URL if it is a timedtext request, and notifies any matching waiters. */
+    /** Records the URL if it is a timedtext request, so callers can reuse it. */
     function record(rawUrl) {
-        if (!rawUrl.includes(timedtextMarker))
-            return;
-        latestUrl = rawUrl;
-        for (let i = waiters.length - 1; i >= 0; i--) {
-            const w = waiters[i];
-            if (w.match(rawUrl)) {
-                clearTimeout(w.timer);
-                waiters.splice(i, 1);
-                w.resolve(rawUrl);
-            }
-        }
+        if (rawUrl.includes(timedtextMarker))
+            latestUrl = rawUrl;
     }
     /** Patches `fetch` and `XMLHttpRequest.open` on the page realm. Idempotent. */
     function installTimedtextInterceptor() {
@@ -2053,29 +2051,11 @@
         return !videoId || url.includes(`v=${videoId}`);
     }
     /**
-     * Returns an already-captured timedtext URL for `videoId` (or the latest one) without waiting,
-     * or `null` if none has been observed yet. Lets callers skip re-triggering the player.
+     * Returns the most recently captured timedtext URL for `videoId` (or the latest one), or `null` if
+     * none has been observed yet. Callers poll this after nudging the player into issuing a request.
      */
     function peekTimedtextUrl(videoId) {
         return latestUrl && matchesVideo(latestUrl, videoId) ? latestUrl : null;
-    }
-    /**
-     * Resolves with a timedtext URL for `videoId` (or the latest one if `videoId` is omitted),
-     * waiting up to `timeoutMs` for the player to issue one. Resolves `null` on timeout.
-     */
-    function waitForTimedtextUrl(videoId, timeoutMs = 6000) {
-        const match = (url) => matchesVideo(url, videoId);
-        if (latestUrl && match(latestUrl))
-            return Promise.resolve(latestUrl);
-        return new Promise((resolve) => {
-            const timer = window.setTimeout(() => {
-                const i = waiters.findIndex(w => w.resolve === resolve);
-                if (i >= 0)
-                    waiters.splice(i, 1);
-                resolve(null);
-            }, timeoutMs);
-            waiters.push({ match, resolve, timer });
-        });
     }
 
     /**
@@ -2120,17 +2100,52 @@
     //#endregion
     //#region strategy 1: intercepted player timedtext request
     /**
-     * Turns on the player's captions (via the CC button) so it issues a timedtext request that our
-     * interceptor can capture. Clicking is a plain DOM action, avoiding cross-realm method calls.
+     * Whether a captured timedtext URL can actually be fetched for text. A PoToken-gated (`exp=xpe`)
+     * request returns an empty body unless it carries a `pot=` token; any other request (non-gated, or
+     * already token-bearing) is fetchable as-is.
      */
-    function enablePlayerCaptions() {
-        const btn = document.querySelector(".ytp-subtitles-button");
-        if (!btn) {
-            warn("CC button (.ytp-subtitles-button) not found; cannot enable captions");
-            return;
-        }
-        if (btn.getAttribute("aria-pressed") !== "true")
-            btn.click();
+    function isFetchable(url) {
+        return !!url && !(/[?&]exp=xpe\b/.test(url) && !/[?&]pot=/.test(url));
+    }
+    /**
+     * Drives the player into issuing a timedtext request we can fetch. Turning captions on makes the
+     * player fetch the track; on a PoToken-gated (`exp=xpe`) video its first fetch is premature and
+     * token-less (empty body) because BotGuard mints the token slightly later - so we re-toggle captions
+     * off→on until a later fetch carries a `pot=` token. Returns the fetchable URL, or `null` if none
+     * appears within `timeoutMs`.
+     */
+    function captureFetchableTimedtext(videoId_1) {
+        return __awaiter(this, arguments, void 0, function* (videoId, timeoutMs = 15000) {
+            var _a, _b;
+            const player = ((_a = pageWindow.document) !== null && _a !== void 0 ? _a : document).getElementById("movie_player");
+            try {
+                (_b = player === null || player === void 0 ? void 0 : player.playVideo) === null || _b === void 0 ? void 0 : _b.call(player);
+            }
+            catch (err) {
+                warn("playVideo() failed:", err);
+            }
+            const deadline = Date.now() + timeoutMs;
+            while (Date.now() < deadline) {
+                const url = peekTimedtextUrl(videoId);
+                if (isFetchable(url))
+                    return url;
+                const btn = document.querySelector(".ytp-subtitles-button");
+                if (!btn) {
+                    warn("CC button (.ytp-subtitles-button) not found; cannot enable captions");
+                    return null;
+                }
+                // Force an off→on transition so the player re-fetches the track (rather than reusing a cached,
+                // token-less result); ending "on" is what triggers the fetch.
+                if (btn.getAttribute("aria-pressed") === "true") {
+                    btn.click();
+                    yield delay(300);
+                }
+                btn.click();
+                yield delay(900);
+            }
+            warn("no fetchable timedtext request appeared after retrying captions");
+            return null;
+        });
     }
     /**
      * Strategy: trigger the player to fetch captions, grab the (PoToken-bearing, authenticated) URL
@@ -2139,15 +2154,13 @@
      */
     function fetchViaInterceptedUrl(videoId) {
         return __awaiter(this, void 0, void 0, function* () {
-            // If the player already issued a timedtext request we can reuse, don't disturb the user's
-            // caption state; only toggle captions on when we have nothing captured yet.
-            if (!peekTimedtextUrl(videoId))
-                enablePlayerCaptions();
-            const captured = yield waitForTimedtextUrl(videoId, 6000);
-            if (!captured) {
-                warn("no player timedtext request captured (could not enable captions in time?)");
+            // Reuse an already-captured, fetchable URL (e.g. the user already had captions on); otherwise
+            // drive the player into issuing one.
+            let captured = peekTimedtextUrl(videoId);
+            if (!isFetchable(captured))
+                captured = yield captureFetchableTimedtext(videoId);
+            if (!captured)
                 return null;
-            }
             const url = new URL(captured, location.origin);
             url.searchParams.set("fmt", "json3");
             const res = yield fetch(url.toString(), { credentials: "include" });

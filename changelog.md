@@ -1,3 +1,6 @@
+# 0.8.4
+- Summarize member-only and age-restricted videos that previously failed: the player's first caption request on these PoToken-gated videos is issued without a token and comes back empty, so the script now re-triggers captions until the player makes a token-bearing request it can read
+
 # 0.8.3
 - Fix subtitles not being captured in the brief tab that opens for member-only and age-restricted videos, by opening it as a normal browser tab instead of routing it through the userscript manager
 

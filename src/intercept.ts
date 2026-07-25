@@ -18,30 +18,15 @@ const pageWindow = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window)
   XMLHttpRequest: typeof XMLHttpRequest;
 };
 
-/** Most recently observed working timedtext URL (from the page's own requests). */
+/** Most recently observed timedtext URL (from the page's own requests). */
 let latestUrl: string | null = null;
-
-type Waiter = { match: (url: string) => boolean; resolve: (url: string) => void; timer: number };
-/** One-shot resolvers waiting for the next matching URL. */
-const waiters: Waiter[] = [];
 
 let installed = false;
 
-/** Records a captured URL if it is a timedtext request, and notifies any matching waiters. */
+/** Records the URL if it is a timedtext request, so callers can reuse it. */
 function record(rawUrl: string): void {
-  if(!rawUrl.includes(timedtextMarker))
-    return;
-
-  latestUrl = rawUrl;
-
-  for(let i = waiters.length - 1; i >= 0; i--) {
-    const w = waiters[i];
-    if(w.match(rawUrl)) {
-      clearTimeout(w.timer);
-      waiters.splice(i, 1);
-      w.resolve(rawUrl);
-    }
-  }
+  if(rawUrl.includes(timedtextMarker))
+    latestUrl = rawUrl;
 }
 
 /** Patches `fetch` and `XMLHttpRequest.open` on the page realm. Idempotent. */
@@ -87,30 +72,9 @@ function matchesVideo(url: string, videoId?: string): boolean {
 }
 
 /**
- * Returns an already-captured timedtext URL for `videoId` (or the latest one) without waiting,
- * or `null` if none has been observed yet. Lets callers skip re-triggering the player.
+ * Returns the most recently captured timedtext URL for `videoId` (or the latest one), or `null` if
+ * none has been observed yet. Callers poll this after nudging the player into issuing a request.
  */
 export function peekTimedtextUrl(videoId?: string): string | null {
   return latestUrl && matchesVideo(latestUrl, videoId) ? latestUrl : null;
-}
-
-/**
- * Resolves with a timedtext URL for `videoId` (or the latest one if `videoId` is omitted),
- * waiting up to `timeoutMs` for the player to issue one. Resolves `null` on timeout.
- */
-export function waitForTimedtextUrl(videoId?: string, timeoutMs = 6000): Promise<string | null> {
-  const match = (url: string) => matchesVideo(url, videoId);
-
-  if(latestUrl && match(latestUrl))
-    return Promise.resolve(latestUrl);
-
-  return new Promise((resolve) => {
-    const timer = window.setTimeout(() => {
-      const i = waiters.findIndex(w => w.resolve === resolve);
-      if(i >= 0)
-        waiters.splice(i, 1);
-      resolve(null);
-    }, timeoutMs);
-    waiters.push({ match, resolve, timer });
-  });
 }

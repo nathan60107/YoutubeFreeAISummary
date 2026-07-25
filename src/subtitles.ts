@@ -14,7 +14,7 @@
  * The types and pure parsing helpers shared with the off-page path live in `subtitle-core.ts`.
  */
 
-import { peekTimedtextUrl, waitForTimedtextUrl } from "./intercept";
+import { peekTimedtextUrl } from "./intercept";
 import {
   defaultPreferredLangs,
   getCaptionTracks,
@@ -29,13 +29,14 @@ import {
   type YtPlayerResponse,
 } from "./subtitle-core";
 import { warn } from "./log";
-import { waitForSelector } from "./utils";
+import { delay, waitForSelector } from "./utils";
 
 //#region page-global access
 
 /** The `#movie_player` element exposes these methods at runtime. */
 type MoviePlayer = HTMLElement & {
   getPlayerResponse?: () => YtPlayerResponse;
+  playVideo?: () => void;
 };
 
 /**
@@ -70,17 +71,53 @@ function getPlayerResponse(): YtPlayerResponse | undefined {
 //#region strategy 1: intercepted player timedtext request
 
 /**
- * Turns on the player's captions (via the CC button) so it issues a timedtext request that our
- * interceptor can capture. Clicking is a plain DOM action, avoiding cross-realm method calls.
+ * Whether a captured timedtext URL can actually be fetched for text. A PoToken-gated (`exp=xpe`)
+ * request returns an empty body unless it carries a `pot=` token; any other request (non-gated, or
+ * already token-bearing) is fetchable as-is.
  */
-function enablePlayerCaptions(): void {
-  const btn = document.querySelector<HTMLButtonElement>(".ytp-subtitles-button");
-  if(!btn) {
-    warn("CC button (.ytp-subtitles-button) not found; cannot enable captions");
-    return;
+function isFetchable(url: string | null): url is string {
+  return !!url && !(/[?&]exp=xpe\b/.test(url) && !/[?&]pot=/.test(url));
+}
+
+/**
+ * Drives the player into issuing a timedtext request we can fetch. Turning captions on makes the
+ * player fetch the track; on a PoToken-gated (`exp=xpe`) video its first fetch is premature and
+ * token-less (empty body) because BotGuard mints the token slightly later - so we re-toggle captions
+ * off→on until a later fetch carries a `pot=` token. Returns the fetchable URL, or `null` if none
+ * appears within `timeoutMs`.
+ */
+async function captureFetchableTimedtext(videoId?: string, timeoutMs = 15000): Promise<string | null> {
+  const player = (pageWindow.document ?? document).getElementById("movie_player") as MoviePlayer | null;
+  try {
+    player?.playVideo?.();
   }
-  if(btn.getAttribute("aria-pressed") !== "true")
+  catch(err) {
+    warn("playVideo() failed:", err);
+  }
+
+  const deadline = Date.now() + timeoutMs;
+  while(Date.now() < deadline) {
+    const url = peekTimedtextUrl(videoId);
+    if(isFetchable(url))
+      return url;
+
+    const btn = document.querySelector<HTMLButtonElement>(".ytp-subtitles-button");
+    if(!btn) {
+      warn("CC button (.ytp-subtitles-button) not found; cannot enable captions");
+      return null;
+    }
+    // Force an off→on transition so the player re-fetches the track (rather than reusing a cached,
+    // token-less result); ending "on" is what triggers the fetch.
+    if(btn.getAttribute("aria-pressed") === "true") {
+      btn.click();
+      await delay(300);
+    }
     btn.click();
+    await delay(900);
+  }
+
+  warn("no fetchable timedtext request appeared after retrying captions");
+  return null;
 }
 
 /**
@@ -89,16 +126,13 @@ function enablePlayerCaptions(): void {
  * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
  */
 async function fetchViaInterceptedUrl(videoId?: string): Promise<SubtitleSegment[] | null> {
-  // If the player already issued a timedtext request we can reuse, don't disturb the user's
-  // caption state; only toggle captions on when we have nothing captured yet.
-  if(!peekTimedtextUrl(videoId))
-    enablePlayerCaptions();
-
-  const captured = await waitForTimedtextUrl(videoId, 6000);
-  if(!captured) {
-    warn("no player timedtext request captured (could not enable captions in time?)");
+  // Reuse an already-captured, fetchable URL (e.g. the user already had captions on); otherwise
+  // drive the player into issuing one.
+  let captured = peekTimedtextUrl(videoId);
+  if(!isFetchable(captured))
+    captured = await captureFetchableTimedtext(videoId);
+  if(!captured)
     return null;
-  }
 
   const url = new URL(captured, location.origin);
   url.searchParams.set("fmt", "json3");

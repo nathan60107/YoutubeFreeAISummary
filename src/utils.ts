@@ -88,6 +88,16 @@ export function onInteraction<TElem extends HTMLElement>(elem: TElem, listener: 
   elem.addEventListener("keydown", proxListener, listenerOptions);
 }
 
+/**
+ * Resolves after `ms` milliseconds. Backed by the page realm's timer (via `unsafeWindow`): the
+ * sandbox's own `setTimeout` throws `NS_ERROR_NOT_INITIALIZED` early in a tab opened with
+ * `window.open` (its initial inner window is already stale), whereas the live page window's works.
+ */
+export function delay(ms: number): Promise<void> {
+  const pageWindow = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window) as Window;
+  return new Promise(resolve => pageWindow.setTimeout(resolve, ms));
+}
+
 /** Resolves with the first element matching `selector`, polling until found or `timeoutMs` elapses (then `null`). */
 export function waitForSelector<T extends Element>(selector: string, timeoutMs = 4000, intervalMs = 100): Promise<T | null> {
   const existing = document.querySelector<T>(selector);
