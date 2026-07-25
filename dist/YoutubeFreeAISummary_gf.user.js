@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.8.2
+// @version           0.8.3
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=75a7c0f
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=f012738
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=75a7c0f
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=f012738
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "greasyfork";
-    const buildNumberRaw = "75a7c0f";
+    const buildNumberRaw = "f012738";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -869,16 +869,25 @@
     }
 
     /**
-     * Opens the given URL in a new tab, using GM.openInTab if available
-     * ⚠️ Requires the directive `@grant GM.openInTab`
+     * Opens the given URL in a new tab.
+     *
+     * Prefers the native `window.open`: it opens a real foreground tab whose player and session behave
+     * normally. Routing the tab through `GM.openInTab` (via `openInNewTab`) was observed to break subtitle
+     * capture on gated videos, so GM is only the fallback for when `window.open` is blocked.
+     *
+     * `window.open` returns `null` (rather than throwing) when a popup blocker stops it — which also
+     * happens when we're called outside a user-gesture stack, after our `await`s. That's the one case we
+     * hand off to `GM.openInTab`, which has extension privilege and isn't popup-blocked.
+     *
+     * Note: intentionally no `noopener`/`noreferrer` here — either would force `window.open` to return
+     * `null` even on success, defeating the block detection. The destinations are trusted (YouTube itself
+     * or the user's chosen AI provider), so leaving the opener reference is acceptable.
+     * ⚠️ The GM fallback requires the directive `@grant GM.openInTab`
      */
     function openInTab(href, background = true) {
-        try {
+        // window.open returns null (it doesn't throw) when blocked; only then fall back to GM.openInTab.
+        if (!window.open(href, "_blank"))
             userutils.openInNewTab(href, background);
-        }
-        catch (err) {
-            window.open(href, "_blank", "noopener noreferrer");
-        }
     }
     //#region DOM utils
     let domLoaded = document.readyState === "complete" || document.readyState === "interactive";

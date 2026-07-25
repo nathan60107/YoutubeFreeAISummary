@@ -43,16 +43,25 @@ export function sendRequest<T = any>(details: GM.Request<T>) {
 }
 
 /**
- * Opens the given URL in a new tab, using GM.openInTab if available  
- * ⚠️ Requires the directive `@grant GM.openInTab`
+ * Opens the given URL in a new tab.
+ *
+ * Prefers the native `window.open`: it opens a real foreground tab whose player and session behave
+ * normally. Routing the tab through `GM.openInTab` (via `openInNewTab`) was observed to break subtitle
+ * capture on gated videos, so GM is only the fallback for when `window.open` is blocked.
+ *
+ * `window.open` returns `null` (rather than throwing) when a popup blocker stops it — which also
+ * happens when we're called outside a user-gesture stack, after our `await`s. That's the one case we
+ * hand off to `GM.openInTab`, which has extension privilege and isn't popup-blocked.
+ *
+ * Note: intentionally no `noopener`/`noreferrer` here — either would force `window.open` to return
+ * `null` even on success, defeating the block detection. The destinations are trusted (YouTube itself
+ * or the user's chosen AI provider), so leaving the opener reference is acceptable.
+ * ⚠️ The GM fallback requires the directive `@grant GM.openInTab`
  */
 export function openInTab(href: string, background = true) {
-  try {
+  // window.open returns null (it doesn't throw) when blocked; only then fall back to GM.openInTab.
+  if(!window.open(href, "_blank"))
     openInNewTab(href, background);
-  }
-  catch(err) {
-    window.open(href, "_blank", "noopener noreferrer");
-  }
 }
 
 //#region DOM utils

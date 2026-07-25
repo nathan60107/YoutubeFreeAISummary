@@ -1,3 +1,6 @@
+# 0.8.3
+- Fix subtitles not being captured in the brief tab that opens for member-only and age-restricted videos, by opening it as a normal browser tab instead of routing it through the userscript manager
+
 # 0.8.2
 - Treat a video that simply has no captions as a plain notice instead of a failure, so hitting a couple of caption-less videos no longer escalates to the copyable debug report and a prompt to file an issue
 
