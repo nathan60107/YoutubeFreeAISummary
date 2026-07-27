@@ -25,6 +25,27 @@ function getVideoTitle(): string {
 }
 
 /**
+ * Reads the current video's channel name. The owner block's markup is renamed often, so we try the
+ * current selectors first and fall back to the page's microformat `<link itemprop="name">`, which
+ * YouTube has kept stable. Returns `""` when none of them match (the prompt then drops the line).
+ */
+function getChannelName(): string {
+  const selectors = [
+    "ytd-watch-metadata ytd-channel-name a",   // current owner block
+    "ytd-video-owner-renderer #channel-name a", // older owner block
+  ];
+  for(const selector of selectors) {
+    const name = document.querySelector(selector)?.textContent?.trim();
+    if(name)
+      return name;
+  }
+  // `content` is a microdata attribute on <link>, not a DOM property, so read it with getAttribute.
+  const fromMicroformat = document
+    .querySelector("[itemprop='author'] link[itemprop='name']")?.getAttribute("content")?.trim();
+  return fromMicroformat ?? "";
+}
+
+/**
  * Captures the current watch page's subtitles and stashes a payload for the AI provider tab, then
  * opens that tab. Assumes we're on a watch page with the player available.
  *
@@ -51,7 +72,9 @@ export async function captureAndHandoff(): Promise<boolean> {
   );
 
   await stashSummaryPayload({
-    prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, getVideoTitle(), location.href),
+    prompt: buildPrompt(
+      result, cfg.promptTemplate, cfg.includeTimestamps, getVideoTitle(), location.href, getChannelName(),
+    ),
     autoSubmit: cfg.autoSubmit,
     title: getVideoTitle(),
     createdAt: Date.now(),

@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.9.0
+// @version           0.10.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=861060f
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=d964be5
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=861060f
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=d964be5
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "github";
-    const buildNumberRaw = "861060f";
+    const buildNumberRaw = "d964be5";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -147,7 +147,7 @@
         "settings.language.hint": "Language this script's own interface is shown in",
         "settings.language.auto": "Follow browser",
         "settings.prompt.label": "Prompt template",
-        "settings.prompt.hint": "Variables: <code>{{title}}</code> title, <code>{{url}}</code> link, <code>{{language}}</code> output language, <code>{{transcript}}</code> subtitles",
+        "settings.prompt.hint": "Variables: <code>{{title}}</code> title, <code>{{channel}}</code> channel, <code>{{url}}</code> link, <code>{{language}}</code> output language, <code>{{transcript}}</code> subtitles",
         "settings.langs.label": "Preferred subtitle languages",
         "settings.langs.hint": "Comma-separated language codes, e.g. <code>zh-TW, ja, en</code>. Empty = follow browser language",
         "settings.langs.placeholder": "Empty = auto",
@@ -186,11 +186,13 @@
         "provider.grok.note": "Quality below AI Studio; results occasionally have minor flaws.",
         // Development-only menu command
         "dev.clearFailures": "[dev] Clear failure count",
-        // Default summary prompt sent to the AI. Keep the {{title}}/{{url}}/{{transcript}} tokens verbatim.
+        // Default summary prompt sent to the AI. Keep the {{title}}/{{channel}}/{{url}}/{{transcript}}
+        // tokens verbatim; the {{channel}} line is dropped when the channel name can't be read.
         "prompt.default": [
             "Summarize the key points of the following YouTube video subtitles (with timestamps), and mark the corresponding timestamp for each point. Write the summary in {{language}}.",
             "",
             "Title: {{title}}",
+            "Channel: {{channel}}",
             "URL: {{url}}",
             "",
             "{{transcript}}",
@@ -208,7 +210,7 @@
         "settings.language.hint": "此腳本介面顯示的語言",
         "settings.language.auto": "跟隨瀏覽器",
         "settings.prompt.label": "提示詞模板",
-        "settings.prompt.hint": "可用變數：<code>{{title}}</code> 標題、<code>{{url}}</code> 連結、<code>{{language}}</code> 輸出語言、<code>{{transcript}}</code> 字幕",
+        "settings.prompt.hint": "可用變數：<code>{{title}}</code> 標題、<code>{{channel}}</code> 頻道、<code>{{url}}</code> 連結、<code>{{language}}</code> 輸出語言、<code>{{transcript}}</code> 字幕",
         "settings.langs.label": "偏好字幕語言",
         "settings.langs.hint": "逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言",
         "settings.langs.placeholder": "留空＝自動",
@@ -245,6 +247,7 @@
             "請依據以下 YouTube 影片字幕（含時間軸）做重點摘要，並在每個重點標註對應的時間戳記。請以{{language}}輸出摘要。",
             "",
             "影片標題：{{title}}",
+            "頻道名稱：{{channel}}",
             "影片連結：{{url}}",
             "",
             "{{transcript}}",
@@ -262,7 +265,7 @@
         "settings.language.hint": "此脚本界面显示的语言",
         "settings.language.auto": "跟随浏览器",
         "settings.prompt.label": "提示词模板",
-        "settings.prompt.hint": "可用变量：<code>{{title}}</code> 标题、<code>{{url}}</code> 链接、<code>{{language}}</code> 输出语言、<code>{{transcript}}</code> 字幕",
+        "settings.prompt.hint": "可用变量：<code>{{title}}</code> 标题、<code>{{channel}}</code> 频道、<code>{{url}}</code> 链接、<code>{{language}}</code> 输出语言、<code>{{transcript}}</code> 字幕",
         "settings.langs.label": "偏好字幕语言",
         "settings.langs.hint": "逗号分隔的语言代码，例如 <code>zh-TW, ja, en</code>。留空＝跟随浏览器语言",
         "settings.langs.placeholder": "留空＝自动",
@@ -299,6 +302,7 @@
             "请依据以下 YouTube 视频字幕（含时间轴）做重点摘要，并在每个重点标注对应的时间戳。请以{{language}}输出摘要。",
             "",
             "视频标题：{{title}}",
+            "频道名称：{{channel}}",
             "视频链接：{{url}}",
             "",
             "{{transcript}}",
@@ -316,7 +320,7 @@
         "settings.language.hint": "このスクリプトの画面を表示する言語",
         "settings.language.auto": "ブラウザに従う",
         "settings.prompt.label": "プロンプトのテンプレート",
-        "settings.prompt.hint": "使用できる変数：<code>{{title}}</code> タイトル、<code>{{url}}</code> リンク、<code>{{language}}</code> 出力言語、<code>{{transcript}}</code> 字幕",
+        "settings.prompt.hint": "使用できる変数：<code>{{title}}</code> タイトル、<code>{{channel}}</code> チャンネル、<code>{{url}}</code> リンク、<code>{{language}}</code> 出力言語、<code>{{transcript}}</code> 字幕",
         "settings.langs.label": "優先する字幕の言語",
         "settings.langs.hint": "カンマ区切りの言語コード（例：<code>zh-TW, ja, en</code>）。空欄＝ブラウザの言語に従う",
         "settings.langs.placeholder": "空欄＝自動",
@@ -353,6 +357,7 @@
             "以下の YouTube 動画の字幕（タイムスタンプ付き）をもとに要点を要約し、各要点に対応するタイムスタンプを付記してください。要約は{{language}}で出力してください。",
             "",
             "タイトル：{{title}}",
+            "チャンネル：{{channel}}",
             "URL：{{url}}",
             "",
             "{{transcript}}",
@@ -370,7 +375,7 @@
         "settings.language.hint": "이 스크립트 화면을 표시할 언어",
         "settings.language.auto": "브라우저 따르기",
         "settings.prompt.label": "프롬프트 템플릿",
-        "settings.prompt.hint": "사용 가능한 변수: <code>{{title}}</code> 제목, <code>{{url}}</code> 링크, <code>{{language}}</code> 출력 언어, <code>{{transcript}}</code> 자막",
+        "settings.prompt.hint": "사용 가능한 변수: <code>{{title}}</code> 제목, <code>{{channel}}</code> 채널, <code>{{url}}</code> 링크, <code>{{language}}</code> 출력 언어, <code>{{transcript}}</code> 자막",
         "settings.langs.label": "선호 자막 언어",
         "settings.langs.hint": "쉼표로 구분한 언어 코드, 예: <code>zh-TW, ja, en</code>. 비워 두면 브라우저 언어를 따릅니다",
         "settings.langs.placeholder": "비워 두면 자동",
@@ -407,6 +412,7 @@
             "다음 YouTube 동영상 자막(타임스탬프 포함)을 바탕으로 핵심 내용을 요약하고, 각 항목에 해당하는 타임스탬프를 표시해 주세요. 요약은 {{language}}로 작성해 주세요.",
             "",
             "제목: {{title}}",
+            "채널: {{channel}}",
             "URL: {{url}}",
             "",
             "{{transcript}}",
@@ -424,7 +430,7 @@
         "settings.language.hint": "Idioma en el que se muestra la interfaz de este script",
         "settings.language.auto": "Seguir el navegador",
         "settings.prompt.label": "Plantilla del prompt",
-        "settings.prompt.hint": "Variables: <code>{{title}}</code> título, <code>{{url}}</code> enlace, <code>{{language}}</code> idioma de salida, <code>{{transcript}}</code> subtítulos",
+        "settings.prompt.hint": "Variables: <code>{{title}}</code> título, <code>{{channel}}</code> canal, <code>{{url}}</code> enlace, <code>{{language}}</code> idioma de salida, <code>{{transcript}}</code> subtítulos",
         "settings.langs.label": "Idiomas de subtítulos preferidos",
         "settings.langs.hint": "Códigos de idioma separados por comas, p. ej. <code>zh-TW, ja, en</code>. Vacío = seguir el idioma del navegador",
         "settings.langs.placeholder": "Vacío = automático",
@@ -461,6 +467,7 @@
             "Resume los puntos clave de los siguientes subtítulos de un vídeo de YouTube (con marcas de tiempo), e indica la marca de tiempo correspondiente a cada punto. Escribe el resumen en {{language}}.",
             "",
             "Título: {{title}}",
+            "Canal: {{channel}}",
             "URL: {{url}}",
             "",
             "{{transcript}}",
@@ -478,7 +485,7 @@
         "settings.language.hint": "Langue d’affichage de l’interface de ce script",
         "settings.language.auto": "Suivre le navigateur",
         "settings.prompt.label": "Modèle de prompt",
-        "settings.prompt.hint": "Variables : <code>{{title}}</code> titre, <code>{{url}}</code> lien, <code>{{language}}</code> langue de sortie, <code>{{transcript}}</code> sous-titres",
+        "settings.prompt.hint": "Variables : <code>{{title}}</code> titre, <code>{{channel}}</code> chaîne, <code>{{url}}</code> lien, <code>{{language}}</code> langue de sortie, <code>{{transcript}}</code> sous-titres",
         "settings.langs.label": "Langues de sous-titres préférées",
         "settings.langs.hint": "Codes de langue séparés par des virgules, p. ex. <code>zh-TW, ja, en</code>. Vide = suivre la langue du navigateur",
         "settings.langs.placeholder": "Vide = automatique",
@@ -515,6 +522,7 @@
             "Résume les points clés des sous-titres suivants d’une vidéo YouTube (avec horodatage), et indique l’horodatage correspondant à chaque point. Rédige le résumé en {{language}}.",
             "",
             "Titre : {{title}}",
+            "Chaîne : {{channel}}",
             "URL : {{url}}",
             "",
             "{{transcript}}",
@@ -532,7 +540,7 @@
         "settings.language.hint": "Sprache, in der die Oberfläche dieses Skripts angezeigt wird",
         "settings.language.auto": "Browser folgen",
         "settings.prompt.label": "Prompt-Vorlage",
-        "settings.prompt.hint": "Variablen: <code>{{title}}</code> Titel, <code>{{url}}</code> Link, <code>{{language}}</code> Ausgabesprache, <code>{{transcript}}</code> Untertitel",
+        "settings.prompt.hint": "Variablen: <code>{{title}}</code> Titel, <code>{{channel}}</code> Kanal, <code>{{url}}</code> Link, <code>{{language}}</code> Ausgabesprache, <code>{{transcript}}</code> Untertitel",
         "settings.langs.label": "Bevorzugte Untertitelsprachen",
         "settings.langs.hint": "Kommagetrennte Sprachcodes, z. B. <code>zh-TW, ja, en</code>. Leer = der Browsersprache folgen",
         "settings.langs.placeholder": "Leer = automatisch",
@@ -569,6 +577,7 @@
             "Fasse die wichtigsten Punkte der folgenden Untertitel eines YouTube-Videos (mit Zeitstempeln) zusammen und gib zu jedem Punkt den entsprechenden Zeitstempel an. Schreibe die Zusammenfassung auf {{language}}.",
             "",
             "Titel: {{title}}",
+            "Kanal: {{channel}}",
             "URL: {{url}}",
             "",
             "{{transcript}}",
@@ -586,7 +595,7 @@
         "settings.language.hint": "Idioma em que a interface deste script é exibida",
         "settings.language.auto": "Seguir o navegador",
         "settings.prompt.label": "Modelo de prompt",
-        "settings.prompt.hint": "Variáveis: <code>{{title}}</code> título, <code>{{url}}</code> link, <code>{{language}}</code> idioma de saída, <code>{{transcript}}</code> legendas",
+        "settings.prompt.hint": "Variáveis: <code>{{title}}</code> título, <code>{{channel}}</code> canal, <code>{{url}}</code> link, <code>{{language}}</code> idioma de saída, <code>{{transcript}}</code> legendas",
         "settings.langs.label": "Idiomas de legenda preferidos",
         "settings.langs.hint": "Códigos de idioma separados por vírgula, ex.: <code>zh-TW, ja, en</code>. Vazio = seguir o idioma do navegador",
         "settings.langs.placeholder": "Vazio = automático",
@@ -623,6 +632,7 @@
             "Resuma os pontos principais das seguintes legendas de um vídeo do YouTube (com marcações de tempo) e indique a marcação de tempo correspondente a cada ponto. Escreva o resumo em {{language}}.",
             "",
             "Título: {{title}}",
+            "Canal: {{channel}}",
             "URL: {{url}}",
             "",
             "{{transcript}}",
@@ -640,7 +650,7 @@
         "settings.language.hint": "Язык, на котором отображается интерфейс этого скрипта",
         "settings.language.auto": "Как в браузере",
         "settings.prompt.label": "Шаблон запроса",
-        "settings.prompt.hint": "Переменные: <code>{{title}}</code> заголовок, <code>{{url}}</code> ссылка, <code>{{language}}</code> язык ответа, <code>{{transcript}}</code> субтитры",
+        "settings.prompt.hint": "Переменные: <code>{{title}}</code> заголовок, <code>{{channel}}</code> канал, <code>{{url}}</code> ссылка, <code>{{language}}</code> язык ответа, <code>{{transcript}}</code> субтитры",
         "settings.langs.label": "Предпочитаемые языки субтитров",
         "settings.langs.hint": "Коды языков через запятую, например <code>zh-TW, ja, en</code>. Пусто = следовать языку браузера",
         "settings.langs.placeholder": "Пусто = автоматически",
@@ -677,6 +687,7 @@
             "Кратко изложи ключевые моменты по следующим субтитрам видео с YouTube (с тайм-кодами) и укажи соответствующий тайм-код для каждого пункта. Ответ дай на языке: {{language}}.",
             "",
             "Заголовок: {{title}}",
+            "Канал: {{channel}}",
             "Ссылка: {{url}}",
             "",
             "{{transcript}}",
@@ -1516,7 +1527,7 @@
      */
     function getSubtitlesForVideo(videoId_1) {
         return __awaiter(this, arguments, void 0, function* (videoId, opts = {}) {
-            var _a, _b, _c, _d;
+            var _a, _b, _c, _d, _e, _f;
             const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
             const resp = yield fetchAndroidPlayerResponse(videoId);
             const tracks = getCaptionTracks(resp !== null && resp !== void 0 ? resp : undefined);
@@ -1530,6 +1541,7 @@
                 return null; // no captions at all
             }
             const videoTitle = (_d = (_c = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _c === void 0 ? void 0 : _c.title) !== null && _d !== void 0 ? _d : "";
+            const videoChannel = (_f = (_e = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _e === void 0 ? void 0 : _e.author) !== null && _f !== void 0 ? _f : "";
             if (!track.baseUrl)
                 throw new Error(`Caption track for ${videoId} has no baseUrl to fetch`);
             const segments = yield fetchTrackSegments(track.baseUrl);
@@ -1538,6 +1550,7 @@
             return {
                 videoId,
                 videoTitle,
+                videoChannel,
                 videoUrl: watchUrl(videoId),
                 lang: track.languageCode,
                 trackName: trackName(track),
@@ -1991,12 +2004,19 @@
      *
      * @param title   Video title, substituted for `{{title}}`.
      * @param url     Watch URL, substituted for `{{url}}`.
+     * @param channel Channel name, substituted for `{{channel}}`. Empty when it couldn't be read.
      */
-    function buildPrompt(result, template, includeTimestamps, title, url) {
+    function buildPrompt(result, template, includeTimestamps, title, url, channel) {
         const transcript = includeTimestamps ? result.timedText : result.text;
         const language = getLanguageLabel(getActiveLanguage());
-        return (template.trim() || t("prompt.default"))
+        let text = template.trim() || t("prompt.default");
+        // An unknown channel would leave a dangling "Channel:" label, so drop its whole line instead of
+        // substituting an empty value. Locale-independent: it works for any label the template uses.
+        if (!channel)
+            text = text.split("\n").filter(line => !line.includes("{{channel}}")).join("\n");
+        return text
             .split("{{title}}").join(title)
+            .split("{{channel}}").join(channel)
             .split("{{url}}").join(url)
             .split("{{language}}").join(language)
             .split("{{transcript}}").join(transcript);
@@ -2314,6 +2334,27 @@
         return document.title.replace(/\s*-\s*YouTube\s*$/, "").trim();
     }
     /**
+     * Reads the current video's channel name. The owner block's markup is renamed often, so we try the
+     * current selectors first and fall back to the page's microformat `<link itemprop="name">`, which
+     * YouTube has kept stable. Returns `""` when none of them match (the prompt then drops the line).
+     */
+    function getChannelName() {
+        var _a, _b, _c, _d;
+        const selectors = [
+            "ytd-watch-metadata ytd-channel-name a", // current owner block
+            "ytd-video-owner-renderer #channel-name a", // older owner block
+        ];
+        for (const selector of selectors) {
+            const name = (_b = (_a = document.querySelector(selector)) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.trim();
+            if (name)
+                return name;
+        }
+        // `content` is a microdata attribute on <link>, not a DOM property, so read it with getAttribute.
+        const fromMicroformat = (_d = (_c = document
+            .querySelector("[itemprop='author'] link[itemprop='name']")) === null || _c === void 0 ? void 0 : _c.getAttribute("content")) === null || _d === void 0 ? void 0 : _d.trim();
+        return fromMicroformat !== null && fromMicroformat !== void 0 ? fromMicroformat : "";
+    }
+    /**
      * Captures the current watch page's subtitles and stashes a payload for the AI provider tab, then
      * opens that tab. Assumes we're on a watch page with the player available.
      *
@@ -2336,7 +2377,7 @@
             log(`Captured ${result.segments.length} subtitle lines `
                 + `(${result.trackName}, lang=${result.lang}, via ${result.source}).`);
             yield stashSummaryPayload({
-                prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, getVideoTitle(), location.href),
+                prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, getVideoTitle(), location.href, getChannelName()),
                 autoSubmit: cfg.autoSubmit,
                 title: getVideoTitle(),
                 createdAt: Date.now(),
@@ -2784,7 +2825,7 @@ select.yfas-input {
                 log(`Captured ${result.segments.length} subtitle lines off-page for ${videoId} `
                     + `(${result.trackName}, lang=${result.lang}).`);
                 yield stashSummaryPayload({
-                    prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, result.videoTitle || videoId, result.videoUrl),
+                    prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, result.videoTitle || videoId, result.videoUrl, result.videoChannel),
                     autoSubmit: cfg.autoSubmit,
                     title: result.videoTitle,
                     createdAt: Date.now(),

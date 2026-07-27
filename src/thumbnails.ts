@@ -135,7 +135,10 @@ async function onThumbClick(btn: HTMLElement, videoId: string): Promise<void> {
     );
 
     await stashSummaryPayload({
-      prompt: buildPrompt(result, cfg.promptTemplate, cfg.includeTimestamps, result.videoTitle || videoId, result.videoUrl),
+      prompt: buildPrompt(
+        result, cfg.promptTemplate, cfg.includeTimestamps,
+        result.videoTitle || videoId, result.videoUrl, result.videoChannel,
+      ),
       autoSubmit: cfg.autoSubmit,
       title: result.videoTitle,
       createdAt: Date.now(),

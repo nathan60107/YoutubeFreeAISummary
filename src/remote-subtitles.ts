@@ -38,6 +38,8 @@ export type RemoteSubtitleResult = SubtitleResult & {
   videoId: string;
   /** The video's title, read from its fetched player response. */
   videoTitle: string;
+  /** The uploading channel's name, read from its fetched player response (`""` if absent). */
+  videoChannel: string;
   /** The canonical watch URL for the video. */
   videoUrl: string;
 };
@@ -150,6 +152,7 @@ export async function getSubtitlesForVideo(
   }
 
   const videoTitle = resp?.videoDetails?.title ?? "";
+  const videoChannel = resp?.videoDetails?.author ?? "";
 
   if(!track.baseUrl)
     throw new Error(`Caption track for ${videoId} has no baseUrl to fetch`);
@@ -161,6 +164,7 @@ export async function getSubtitlesForVideo(
   return {
     videoId,
     videoTitle,
+    videoChannel,
     videoUrl: watchUrl(videoId),
     lang: track.languageCode,
     trackName: trackName(track),

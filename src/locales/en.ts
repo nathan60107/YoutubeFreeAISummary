@@ -20,7 +20,7 @@ export const en = {
   "settings.language.hint": "Language this script's own interface is shown in",
   "settings.language.auto": "Follow browser",
   "settings.prompt.label": "Prompt template",
-  "settings.prompt.hint": "Variables: <code>{{title}}</code> title, <code>{{url}}</code> link, <code>{{language}}</code> output language, <code>{{transcript}}</code> subtitles",
+  "settings.prompt.hint": "Variables: <code>{{title}}</code> title, <code>{{channel}}</code> channel, <code>{{url}}</code> link, <code>{{language}}</code> output language, <code>{{transcript}}</code> subtitles",
   "settings.langs.label": "Preferred subtitle languages",
   "settings.langs.hint": "Comma-separated language codes, e.g. <code>zh-TW, ja, en</code>. Empty = follow browser language",
   "settings.langs.placeholder": "Empty = auto",
@@ -66,11 +66,13 @@ export const en = {
   // Development-only menu command
   "dev.clearFailures": "[dev] Clear failure count",
 
-  // Default summary prompt sent to the AI. Keep the {{title}}/{{url}}/{{transcript}} tokens verbatim.
+  // Default summary prompt sent to the AI. Keep the {{title}}/{{channel}}/{{url}}/{{transcript}}
+  // tokens verbatim; the {{channel}} line is dropped when the channel name can't be read.
   "prompt.default": [
     "Summarize the key points of the following YouTube video subtitles (with timestamps), and mark the corresponding timestamp for each point. Write the summary in {{language}}.",
     "",
     "Title: {{title}}",
+    "Channel: {{channel}}",
     "URL: {{url}}",
     "",
     "{{transcript}}",

@@ -21,9 +21,10 @@ export type ScriptConfig = {
    */
   provider: string;
   /**
-   * The prompt sent to the chosen AI provider. Supports the tokens `{{title}}`, `{{url}}`,
-   * `{{language}}`, `{{transcript}}`, which are replaced with the video's title, URL, the interface
-   * language's native name (so the AI answers in it), and the captured subtitles.
+   * The prompt sent to the chosen AI provider. Supports the tokens `{{title}}`, `{{channel}}`,
+   * `{{url}}`, `{{language}}`, `{{transcript}}`, which are replaced with the video's title, its
+   * channel name, its URL, the interface language's native name (so the AI answers in it), and the
+   * captured subtitles. A line holding `{{channel}}` is dropped when the channel name is unknown.
    *
    * An empty string means "follow the interface language": the built-in default prompt for the
    * active locale is used and tracks language changes. Any non-empty value is a user-customized

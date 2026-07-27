@@ -1,3 +1,6 @@
+# 0.10.0
+- Include the channel name in the summary: the default prompt now passes it to the AI (via a new `{{channel}}` token), giving the summary the context of who made the video
+
 # 0.9.0
 - Summarize in your interface language: the default prompt now tells the AI which language to answer in (via a new `{{language}}` token), so a foreign-language video is no longer summarized in an unexpected language
 

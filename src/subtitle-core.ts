@@ -42,6 +42,7 @@ export type YtPlayerResponse = {
   videoDetails?: {
     videoId?: string;
     title?: string;
+    author?: string;
   };
 };
 
