@@ -26,13 +26,18 @@ const repo = "nathan60107/YoutubeFreeAISummary";
 /** Name of the emitted userscript file */
 const userscriptDistFile = `${pkg.userscriptName}${suffix}.user.js`;
 
-/** URL that links directly to the file to update the userscript from */
+/**
+ * URL that links directly to the file to update the userscript from, or undefined for hosts that
+ * handle updates themselves: Greasy Fork strips `@downloadURL` / `@updateURL` from hosted scripts
+ * and injects its own, so anything we emit there is discarded anyway.
+ *
+ * Only the GitHub build needs them, since a raw file (or a release asset) carries no update source
+ * of its own.
+ */
 const scriptUrl = (() => {
   switch(host) {
   case "greasyfork":
-    return `https://update.greasyfork.org/scripts/#REPLACE:greasyfork_script_id/${userscriptDistFile}`;
-  case "openuserjs":
-    return `https://openuserjs.org/install/nathan60107/${pkg.userscriptName}`;
+    return undefined;
   case "github":
   default:
     return `https://raw.githubusercontent.com/${repo}/${branch}/dist/${userscriptDistFile}`;
@@ -114,9 +119,9 @@ const ringBell = Boolean(env.RING_BELL && (env.RING_BELL.length > 0 && env.RING_
 // @match             *://chat.openai.com/*
 // @match             *://claude.ai/*
 // @match             *://grok.com/*
-// @run-at            document-start
+// @run-at            document-start${scriptUrl ? `
 // @downloadURL       ${scriptUrl}
-// @updateURL         ${scriptUrl}
+// @updateURL         ${scriptUrl}` : ""}
 // @connect           github.com
 // @connect           raw.githubusercontent.com
 // @grant             GM.getValue

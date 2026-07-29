@@ -12,7 +12,7 @@ export const branch = (branchRaw.match(/^#{{.+}}$/) ? "main" : branchRaw) as "ma
 /** Path to the GitHub repo in the format "User/Repo" */
 export const repo = "nathan60107/YoutubeFreeAISummary";
 /** Which host the userscript was installed from */
-export const host = (hostRaw.match(/^#{{.+}}$/) ? "github" : hostRaw) as "github" | "greasyfork" | "openuserjs";
+export const host = (hostRaw.match(/^#{{.+}}$/) ? "github" : hostRaw) as "github" | "greasyfork";
 /** The build number of the userscript */
 export const buildNumber = (buildNumberRaw.match(/^#{{.+}}$/) ? "BUILD_ERROR!" : buildNumberRaw) as string; // asserted as generic string instead of literal
 
@@ -20,7 +20,6 @@ export const buildNumber = (buildNumberRaw.match(/^#{{.+}}$/) ? "BUILD_ERROR!" :
 export const platformNames: Record<typeof host, string> = {
   github: "GitHub",
   greasyfork: "GreasyFork",
-  openuserjs: "OpenUserJS",
 };
 
 /** Default compression format used throughout the entire script */
