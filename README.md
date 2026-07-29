@@ -27,12 +27,12 @@ Planned features and fixes:
 
 ## Installation
 
-> This project is currently under active development. Installation links will be added with the first release.
+Requires [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
 
 | Platform | Link |
 |----------|------|
-| GreasyFork (Tampermonkey / Violentmonkey) | 🚧 In Development |
-| OpenUserJS (Tampermonkey / Violentmonkey) | 🚧 In Development |
+| GreasyFork | [Install](https://greasyfork.org/scripts/589075-youtubefreeaisummary) |
+| Direct from this repo | [Install](https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/dist/YoutubeFreeAISummary.user.js) |
 
 ## Development
 

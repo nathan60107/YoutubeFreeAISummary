@@ -27,12 +27,12 @@
 
 ## 安裝方式
 
-> 本專案目前仍在積極開發中，尚未提供正式安裝連結。
+需先安裝 [Tampermonkey](https://www.tampermonkey.net/) 或 [Violentmonkey](https://violentmonkey.github.io/)。
 
 | 平台 | 連結 |
 |------|------|
-| GreasyFork（Tampermonkey / Violentmonkey） | 🚧 開發中 |
-| OpenUserJS（Tampermonkey / Violentmonkey） | 🚧 開發中 |
+| GreasyFork | [安裝](https://greasyfork.org/zh-TW/scripts/589075-youtubefreeaisummary) |
+| 直接從本 repo 安裝 | [安裝](https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/dist/YoutubeFreeAISummary.user.js) |
 
 ## 開發
 
