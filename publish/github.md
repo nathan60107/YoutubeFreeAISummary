@@ -40,14 +40,20 @@ userscript tampermonkey violentmonkey youtube youtube-subtitles ai-summary gemin
 | 欄位 | 值 |
 |------|-----|
 | Tag | `v0.10.0`（target: `main`） |
-| Release title | `v0.10.0 — First public release` |
+| Release title | `v0.10.0 - First public release` |
 | Set as latest release | ✅ |
 | Attachments | `dist/YoutubeFreeAISummary.user.js`、`dist/YoutubeFreeAISummary_gf.user.js` |
+
+> ✅ v0.10.0 已發布：<https://github.com/nathan60107/YoutubeFreeAISummary/releases/tag/v0.10.0>
 
 ### Release notes（直接貼上）
 
 ```markdown
-First public release of **YouTube Free AI Summary** — a Tampermonkey / Violentmonkey userscript that adds a button to YouTube which grabs the current video's subtitles and drops them straight into a freshly opened AI chat (Google AI Studio, Gemini, ChatGPT, Claude, or Grok), ready to be summarized.
+First public release of **YouTube Free AI Summary** — it adds a button to YouTube that grabs the current video's subtitles and drops them straight into a freshly opened AI chat (Google AI Studio, Gemini, ChatGPT, Claude, or Grok), ready to be summarized.
+
+![The Summarize button on a video page](https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/summarize-button.png)
+
+Once installed, a **Summarize** button (outlined in red) appears next to the like / dislike buttons on the video page. One press and it starts.
 
 ## Install
 
@@ -56,15 +62,17 @@ First public release of **YouTube Free AI Summary** — a Tampermonkey / Violent
 | Greasy Fork | https://greasyfork.org/scripts/589075-youtubefreeaisummary |
 | Direct from this repo | https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/dist/YoutubeFreeAISummary.user.js |
 
-Requires Tampermonkey or Violentmonkey, plus a logged-in account on the AI service you pick. No API key, no payment.
+Requires Tampermonkey (or another userscript manager), plus a logged-in account on the AI service you pick. No API key, no payment.
 
 ## Highlights
 
-- **On-page subtitle capture** — reads the subtitles the page already has, so members-only, age-restricted and region-locked videos work too
+- **Completely free** — no API key, no payment, no subscription
+- **One click** — press the button on the video page and the summary starts
 - **Choice of AI service** — AI Studio, Gemini, ChatGPT, Claude or Grok, picked in settings
-- **No length limit** — the transcript is typed into the AI's input instead of being smuggled through the URL
-- **Summarize from a thumbnail** — hover any thumbnail on home / search / related / channel pages for a sparkle button, no need to open the video
-- **Custom prompt** with `{{title}}`, `{{channel}}`, `{{url}}`, `{{language}}`, `{{transcript}}` tokens
+- **Works on restricted videos** — members-only, age-restricted and region-locked videos can be summarized too, as long as you can watch them yourself
+- **Long videos aren't cut short** — the whole transcript reaches the AI
+- **Summarize without opening the video** — hover any thumbnail for a button that summarizes it right there
+- **Custom prompt** — write your own prompt to control how the AI summarizes and what it focuses on
 - **10 interface languages**, auto-detected from the browser
 
 ## Changes in 0.10.0
@@ -74,17 +82,19 @@ Requires Tampermonkey or Violentmonkey, plus a logged-in account on the AI servi
 Full history: [changelog.md](https://github.com/nathan60107/YoutubeFreeAISummary/blob/main/changelog.md)
 ```
 
-### 用 gh CLI 建立（可選）
+### 用 gh CLI 建立（0.10.0 即以此方式發布）
 
 ```bash
 gh release create v0.10.0 \
   dist/YoutubeFreeAISummary.user.js \
   dist/YoutubeFreeAISummary_gf.user.js \
-  --title "v0.10.0 — First public release" \
-  --notes-file publish/release-notes-0.10.0.md
+  --title "v0.10.0 - First public release" \
+  --notes-file <上面 release notes 另存的檔案> \
+  --latest
 ```
 
-（`--notes-file` 指向的檔案請先自行從上面的 release notes 另存；或改用 `--notes "…"` 直接帶入。）
+先把上面那段 release notes 另存成暫存 md 檔再以 `--notes-file` 帶入（避免 shell 對 markdown 的跳脫問題）。
+標題使用 ASCII `-` 而非 em dash，PowerShell 傳遞非 ASCII 參數容易編碼出錯。
 
 ---
 
