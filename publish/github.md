@@ -24,8 +24,9 @@
 | 欄位 | 值 |
 |------|-----|
 | Description | `Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary` |
-| Website | `https://greasyfork.org/scripts/589075-youtubefreeaisummary` |
 | Topics | 見下方 |
+
+Website 欄位留空：之後還打算做瀏覽器擴充元件版本，屆時再決定要指向哪裡。
 
 Topics（複製貼上，GitHub 上以空白分隔輸入）：
 
@@ -101,5 +102,4 @@ gh release create v0.10.0 \
 ## 3. 上架後待辦
 
 - [x] 更新 [README.md](../README.md) 與 [README.zh-TW.md](../README.zh-TW.md) 的安裝區塊（已填入 Greasy Fork 連結，並補上 GitHub raw 這一列）
-- [ ] Repository 的 Website 欄位填入 `https://greasyfork.org/scripts/589075-youtubefreeaisummary`
 - [ ] 後續每次發版：更新 `package.json` 版本 → `npm run build-prod` → 更新 `changelog.md` → commit + push → 開 tag/release → 更新 Greasy Fork 上的原始碼

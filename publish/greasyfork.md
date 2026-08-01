@@ -159,4 +159,3 @@ Once installed, a **Summarize** button (outlined in red) appears next to the lik
 - [x] 記下腳本頁面網址：<https://greasyfork.org/scripts/589075-youtubefreeaisummary>
 - [x] 確認安裝檔內是 Greasy Fork 自己注入的 `@downloadURL` / `@updateURL`（已驗證，見上方說明）
 - [x] 更新 [README.md](../README.md) 與 [README.zh-TW.md](../README.zh-TW.md) 安裝表格中的 GreasyFork 連結
-- [ ] 把腳本網址填進 GitHub repo 的 Website 欄位（見 [github.md](github.md)）
