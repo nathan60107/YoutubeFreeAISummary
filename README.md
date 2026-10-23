@@ -51,7 +51,10 @@ You can also install the `.user.js` from this repo's `dist/` directly.
 
 Planned features and fixes:
 
-- **Browser extension version** — a packaged browser extension in addition to the userscript
+- **Stop playback on members-only videos** — Pause playback automatically when a members-only video is opened to capture its subtitles
+- **Skip auto-translated subtitles** — Bypass machine-translated tracks and fetch the untranslated auto-generated transcript or creator-uploaded subtitles/translations instead
+- **Configurable thumbnail button position** — Place the quick-summarize icon in the top-left, bottom-left, or bottom-right corner of thumbnails, or hide it altogether
+- **Browser extension version** — A packaged browser extension in addition to the userscript
 
 ## Development
 
