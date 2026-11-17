@@ -40,7 +40,12 @@ export type ScriptConfig = {
    * track wins. Empty string means "auto" (follow the browser's languages).
    */
   preferredLangs: string;
+  /** Which corner of a video thumbnail the hover summarize button sits in, or `"off"` to hide it. */
+  thumbButtonPosition: ThumbButtonPosition;
 };
+
+/** Placement of the thumbnail overlay button (`thumbnails.ts`). `"off"` disables the button. */
+export type ThumbButtonPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "off";
 
 /** Data handed off from the YouTube tab to the AI provider tab via GM storage. */
 export type SummaryPayload = {

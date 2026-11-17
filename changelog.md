@@ -1,3 +1,7 @@
+# 0.12.0
+- Choose where the thumbnail summarize button sits — any of the four corners — or turn it off, in the settings; the settings also point you to YouTube's video-preview-on-hover option, which hides the button while it's on
+- Keep the thumbnail button inside the image: on the home feed, search and related lists it could sit partly outside the thumbnail's edge
+
 # 0.11.0
 - Summarize member-only and age-restricted videos straight from their thumbnail without opening them: the script now asks YouTube for the subtitles with your existing sign-in, and only falls back to the short-lived tab if that fails
 - Add a Privacy section to the README explaining that your YouTube sign-in is only ever sent to YouTube

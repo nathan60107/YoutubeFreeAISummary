@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.11.0
+// @version           0.12.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=80bb4e4
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=4b8cf48
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=80bb4e4
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=4b8cf48
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "github";
-    const buildNumberRaw = "80bb4e4";
+    const buildNumberRaw = "4b8cf48";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -150,6 +150,13 @@
         "settings.langs.label": "Preferred subtitle languages",
         "settings.langs.hint": "Comma-separated language codes, e.g. <code>zh-TW, ja, en</code>. Empty = follow browser language",
         "settings.langs.placeholder": "Empty = auto",
+        "settings.thumbPos.label": "Thumbnail summary button",
+        "settings.thumbPos.hint": "Where the summarize button appears when you hover a video thumbnail. Not showing up? Turn off video previews on hover in <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">YouTube's playback settings</a>.",
+        "settings.thumbPos.topLeft": "Top left",
+        "settings.thumbPos.topRight": "Top right (may be covered by YouTube's own buttons)",
+        "settings.thumbPos.bottomLeft": "Bottom left",
+        "settings.thumbPos.bottomRight": "Bottom right",
+        "settings.thumbPos.off": "Off",
         "settings.timestamps": "Include timestamps in subtitles (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Auto-submit after injecting",
         "settings.reset": "Reset to defaults",
@@ -213,6 +220,13 @@
         "settings.langs.label": "偏好字幕語言",
         "settings.langs.hint": "逗號分隔的語言代碼，例如 <code>zh-TW, ja, en</code>。留空＝跟隨瀏覽器語言",
         "settings.langs.placeholder": "留空＝自動",
+        "settings.thumbPos.label": "縮圖摘要按鈕",
+        "settings.thumbPos.hint": "滑鼠移到影片縮圖上時，摘要按鈕出現的位置。按鈕沒有出現？請到 <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">YouTube 播放設定</a>關閉「影片預覽功能」。",
+        "settings.thumbPos.topLeft": "左上",
+        "settings.thumbPos.topRight": "右上（可能被 YouTube 原生按鈕擋住）",
+        "settings.thumbPos.bottomLeft": "左下",
+        "settings.thumbPos.bottomRight": "右下",
+        "settings.thumbPos.off": "關閉",
         "settings.timestamps": "字幕包含時間戳（<code>[h:mm:ss]</code>）",
         "settings.autoSubmit": "注入後自動送出",
         "settings.reset": "重設為預設",
@@ -268,6 +282,13 @@
         "settings.langs.label": "偏好字幕语言",
         "settings.langs.hint": "逗号分隔的语言代码，例如 <code>zh-TW, ja, en</code>。留空＝跟随浏览器语言",
         "settings.langs.placeholder": "留空＝自动",
+        "settings.thumbPos.label": "缩略图摘要按钮",
+        "settings.thumbPos.hint": "鼠标移到视频缩略图上时，摘要按钮出现的位置。按钮没有出现？请到 <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">YouTube 播放设置</a>关闭悬停预览视频的功能。",
+        "settings.thumbPos.topLeft": "左上",
+        "settings.thumbPos.topRight": "右上（可能被 YouTube 原生按钮挡住）",
+        "settings.thumbPos.bottomLeft": "左下",
+        "settings.thumbPos.bottomRight": "右下",
+        "settings.thumbPos.off": "关闭",
         "settings.timestamps": "字幕包含时间戳（<code>[h:mm:ss]</code>）",
         "settings.autoSubmit": "注入后自动发送",
         "settings.reset": "重置为默认",
@@ -323,6 +344,13 @@
         "settings.langs.label": "優先する字幕の言語",
         "settings.langs.hint": "カンマ区切りの言語コード（例：<code>zh-TW, ja, en</code>）。空欄＝ブラウザの言語に従う",
         "settings.langs.placeholder": "空欄＝自動",
+        "settings.thumbPos.label": "サムネイルの要約ボタン",
+        "settings.thumbPos.hint": "動画のサムネイルにカーソルを合わせたときに要約ボタンを表示する位置。表示されない場合は、<a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">YouTube の再生設定</a>でホバー時の動画プレビューをオフにしてください。",
+        "settings.thumbPos.topLeft": "左上",
+        "settings.thumbPos.topRight": "右上（YouTube 標準のボタンに隠れることがあります）",
+        "settings.thumbPos.bottomLeft": "左下",
+        "settings.thumbPos.bottomRight": "右下",
+        "settings.thumbPos.off": "オフ",
         "settings.timestamps": "字幕にタイムスタンプを含める（<code>[h:mm:ss]</code>）",
         "settings.autoSubmit": "入力後に自動送信する",
         "settings.reset": "初期設定に戻す",
@@ -378,6 +406,13 @@
         "settings.langs.label": "선호 자막 언어",
         "settings.langs.hint": "쉼표로 구분한 언어 코드, 예: <code>zh-TW, ja, en</code>. 비워 두면 브라우저 언어를 따릅니다",
         "settings.langs.placeholder": "비워 두면 자동",
+        "settings.thumbPos.label": "썸네일 요약 버튼",
+        "settings.thumbPos.hint": "동영상 썸네일에 마우스를 올렸을 때 요약 버튼이 표시되는 위치입니다. 버튼이 보이지 않나요? <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">YouTube 재생 설정</a>에서 마우스 오버 시 동영상 미리보기를 꺼 주세요.",
+        "settings.thumbPos.topLeft": "왼쪽 위",
+        "settings.thumbPos.topRight": "오른쪽 위 (YouTube 기본 버튼에 가려질 수 있음)",
+        "settings.thumbPos.bottomLeft": "왼쪽 아래",
+        "settings.thumbPos.bottomRight": "오른쪽 아래",
+        "settings.thumbPos.off": "끄기",
         "settings.timestamps": "자막에 타임스탬프 포함 (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "입력 후 자동 전송",
         "settings.reset": "기본값으로 재설정",
@@ -433,6 +468,13 @@
         "settings.langs.label": "Idiomas de subtítulos preferidos",
         "settings.langs.hint": "Códigos de idioma separados por comas, p. ej. <code>zh-TW, ja, en</code>. Vacío = seguir el idioma del navegador",
         "settings.langs.placeholder": "Vacío = automático",
+        "settings.thumbPos.label": "Botón de resumen en miniaturas",
+        "settings.thumbPos.hint": "Dónde aparece el botón de resumen al pasar el cursor sobre la miniatura de un vídeo. ¿No aparece? Desactiva la vista previa de vídeos al pasar el cursor en la <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">configuración de reproducción de YouTube</a>.",
+        "settings.thumbPos.topLeft": "Arriba a la izquierda",
+        "settings.thumbPos.topRight": "Arriba a la derecha (puede quedar tapado por los botones de YouTube)",
+        "settings.thumbPos.bottomLeft": "Abajo a la izquierda",
+        "settings.thumbPos.bottomRight": "Abajo a la derecha",
+        "settings.thumbPos.off": "Desactivado",
         "settings.timestamps": "Incluir marcas de tiempo en los subtítulos (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Enviar automáticamente tras insertar",
         "settings.reset": "Restablecer valores predeterminados",
@@ -488,6 +530,13 @@
         "settings.langs.label": "Langues de sous-titres préférées",
         "settings.langs.hint": "Codes de langue séparés par des virgules, p. ex. <code>zh-TW, ja, en</code>. Vide = suivre la langue du navigateur",
         "settings.langs.placeholder": "Vide = automatique",
+        "settings.thumbPos.label": "Bouton de résumé sur les miniatures",
+        "settings.thumbPos.hint": "Emplacement du bouton de résumé lorsque vous survolez la miniature d'une vidéo. Il n'apparaît pas ? Désactivez l'aperçu des vidéos au survol dans les <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">paramètres de lecture de YouTube</a>.",
+        "settings.thumbPos.topLeft": "En haut à gauche",
+        "settings.thumbPos.topRight": "En haut à droite (peut être masqué par les boutons de YouTube)",
+        "settings.thumbPos.bottomLeft": "En bas à gauche",
+        "settings.thumbPos.bottomRight": "En bas à droite",
+        "settings.thumbPos.off": "Désactivé",
         "settings.timestamps": "Inclure les horodatages dans les sous-titres (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Envoyer automatiquement après insertion",
         "settings.reset": "Réinitialiser aux valeurs par défaut",
@@ -543,6 +592,13 @@
         "settings.langs.label": "Bevorzugte Untertitelsprachen",
         "settings.langs.hint": "Kommagetrennte Sprachcodes, z. B. <code>zh-TW, ja, en</code>. Leer = der Browsersprache folgen",
         "settings.langs.placeholder": "Leer = automatisch",
+        "settings.thumbPos.label": "Zusammenfassen-Button auf Vorschaubildern",
+        "settings.thumbPos.hint": "Wo der Zusammenfassen-Button erscheint, wenn du mit der Maus über ein Vorschaubild fährst. Er erscheint nicht? Deaktiviere die Videovorschau beim Darüberfahren in den <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">Wiedergabeeinstellungen von YouTube</a>.",
+        "settings.thumbPos.topLeft": "Oben links",
+        "settings.thumbPos.topRight": "Oben rechts (kann von YouTubes eigenen Buttons verdeckt werden)",
+        "settings.thumbPos.bottomLeft": "Unten links",
+        "settings.thumbPos.bottomRight": "Unten rechts",
+        "settings.thumbPos.off": "Aus",
         "settings.timestamps": "Zeitstempel in Untertiteln einschließen (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Nach dem Einfügen automatisch absenden",
         "settings.reset": "Auf Standard zurücksetzen",
@@ -598,6 +654,13 @@
         "settings.langs.label": "Idiomas de legenda preferidos",
         "settings.langs.hint": "Códigos de idioma separados por vírgula, ex.: <code>zh-TW, ja, en</code>. Vazio = seguir o idioma do navegador",
         "settings.langs.placeholder": "Vazio = automático",
+        "settings.thumbPos.label": "Botão de resumo nas miniaturas",
+        "settings.thumbPos.hint": "Onde o botão de resumo aparece ao passar o mouse sobre a miniatura de um vídeo. Não aparece? Desative a prévia de vídeos ao passar o mouse nas <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">configurações de reprodução do YouTube</a>.",
+        "settings.thumbPos.topLeft": "Canto superior esquerdo",
+        "settings.thumbPos.topRight": "Canto superior direito (pode ficar coberto pelos botões do YouTube)",
+        "settings.thumbPos.bottomLeft": "Canto inferior esquerdo",
+        "settings.thumbPos.bottomRight": "Canto inferior direito",
+        "settings.thumbPos.off": "Desativado",
         "settings.timestamps": "Incluir marcações de tempo nas legendas (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Enviar automaticamente após inserir",
         "settings.reset": "Restaurar padrões",
@@ -653,6 +716,13 @@
         "settings.langs.label": "Предпочитаемые языки субтитров",
         "settings.langs.hint": "Коды языков через запятую, например <code>zh-TW, ja, en</code>. Пусто = следовать языку браузера",
         "settings.langs.placeholder": "Пусто = автоматически",
+        "settings.thumbPos.label": "Кнопка пересказа на миниатюрах",
+        "settings.thumbPos.hint": "Где появляется кнопка пересказа при наведении на миниатюру видео. Не появляется? Отключите предпросмотр видео при наведении в <a href=\"https://www.youtube.com/account_playback\" target=\"_blank\" rel=\"noopener\">настройках воспроизведения YouTube</a>.",
+        "settings.thumbPos.topLeft": "Слева сверху",
+        "settings.thumbPos.topRight": "Справа сверху (может перекрываться кнопками YouTube)",
+        "settings.thumbPos.bottomLeft": "Слева снизу",
+        "settings.thumbPos.bottomRight": "Справа снизу",
+        "settings.thumbPos.off": "Выключено",
         "settings.timestamps": "Включать тайм-коды в субтитры (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Автоматически отправлять после вставки",
         "settings.reset": "Сбросить к настройкам по умолчанию",
@@ -2059,18 +2129,17 @@
         includeTimestamps: true,
         autoSubmit: true,
         preferredLangs: "",
+        thumbButtonPosition: "top-left",
     });
     const config = new userutils.DataStore({
         id: "script-config",
         defaultData: getDefaultConfig(),
         // increment this value if the data format changes:
-        formatVersion: 1,
+        formatVersion: 2,
         // functions that migrate data from older versions to newer ones:
         migrations: {
-        // migrate from v1 to v2:
-        // 2: (oldData) => {
-        //   return { ...oldData, newProp: "foo" };
-        // },
+            // v1 -> v2: added `thumbButtonPosition` (top-left was the only placement before)
+            2: (oldData) => (Object.assign(Object.assign({}, oldData), { thumbButtonPosition: "top-left" })),
         },
         encodeData: (data) => canCompress ? userutils.compress(data, compressionFormat, "string") : data,
         decodeData: (data) => canCompress ? userutils.decompress(data, compressionFormat, "string") : data,
@@ -2640,6 +2709,18 @@
         <input type="text" class="yfas-input" data-field="preferredLangs" data-i18n-placeholder="settings.langs.placeholder" />
       </label>
 
+      <label class="yfas-field">
+        <span class="yfas-field-label" data-i18n="settings.thumbPos.label"></span>
+        <span class="yfas-field-hint" data-i18n-html="settings.thumbPos.hint"></span>
+        <select class="yfas-input" data-field="thumbButtonPosition">
+          <option value="top-left" data-i18n="settings.thumbPos.topLeft"></option>
+          <option value="top-right" data-i18n="settings.thumbPos.topRight"></option>
+          <option value="bottom-left" data-i18n="settings.thumbPos.bottomLeft"></option>
+          <option value="bottom-right" data-i18n="settings.thumbPos.bottomRight"></option>
+          <option value="off" data-i18n="settings.thumbPos.off"></option>
+        </select>
+      </label>
+
       <label class="yfas-check">
         <input type="checkbox" data-field="includeTimestamps" />
         <span data-i18n-html="settings.timestamps"></span>
@@ -2669,6 +2750,7 @@
         const langEl = overlay.querySelector("[data-field='preferredLangs']");
         const tsEl = overlay.querySelector("[data-field='includeTimestamps']");
         const autoEl = overlay.querySelector("[data-field='autoSubmit']");
+        const thumbPosEl = overlay.querySelector("[data-field='thumbButtonPosition']");
         // The raw language setting the user has picked (persisted verbatim: `"auto"` or a locale code) and
         // the concrete locale it currently resolves to (used to render the panel and provider note).
         let selectedLangSetting = data.language;
@@ -2695,6 +2777,7 @@
         langEl.value = data.preferredLangs;
         tsEl.checked = data.includeTimestamps;
         autoEl.checked = data.autoSubmit;
+        thumbPosEl.value = data.thumbButtonPosition;
         localize(previewLang);
         // Keep the provider note in sync with the dropdown.
         providerEl.addEventListener("change", () => {
@@ -2721,6 +2804,7 @@
             langEl.value = "";
             tsEl.checked = true;
             autoEl.checked = true;
+            thumbPosEl.value = getDefaultConfig().thumbButtonPosition;
         });
         overlay.querySelector("[data-action='save']").addEventListener("click", () => {
             void config.setData({
@@ -2731,7 +2815,10 @@
                 preferredLangs: langEl.value.trim(),
                 includeTimestamps: tsEl.checked,
                 autoSubmit: autoEl.checked,
+                thumbButtonPosition: thumbPosEl.value,
             });
+            // Let live UI (the thumbnail buttons) pick up the new settings without a reload.
+            window.dispatchEvent(new Event("yfas-config-changed"));
             // Apply the chosen language immediately so the rest of the page updates without a reload.
             // `previewLang` already holds resolveLanguage(selectedLangSetting) (kept in sync above).
             if (previewLang !== getActiveLanguage()) {
@@ -2758,6 +2845,10 @@
   font-size: 1.2rem;
   opacity: 0.7;
   margin-bottom: 6px;
+}
+.yfas-field-hint a {
+  color: var(--yt-spec-call-to-action, #065fd4);
+  text-decoration: underline;
 }
 .yfas-field-hint code,
 .yfas-check code {
@@ -2822,6 +2913,7 @@ select.yfas-input {
     /**
      * Off-page summary trigger: a small sparkle button that fades in over any video thumbnail (home,
      * search, related, channel, …). Clicking it summarizes that video without the user opening it.
+     * Its corner (or "off") comes from the `thumbButtonPosition` setting.
      *
      * Videos are captured entirely off-page via InnerTube player requests (`remote-subtitles.ts`): the
      * anonymous ANDROID player for public videos, then the signed-in WEB player for gated ones
@@ -2849,6 +2941,17 @@ select.yfas-input {
         "a.reel-item-endpoint", // current Shorts lockup thumbnail
         "a.yt-lockup-view-model-wiz__content-image", // older lockup (kept for compatibility)
     ].join(", ");
+    /**
+     * The element inside a thumbnail anchor that is exactly the image's box, which the button is placed
+     * in. The anchor itself can't be used for the `*ViewModel` lockups: it's padded past the image (home
+     * feed: 12px below; search / related lists: 12–16px on the right), and absolute positioning measures
+     * from the padding edge. Their `yt-thumbnail-view-model` matches the image exactly (checked on home,
+     * search, related and Shorts). Classic `a#thumbnail` anchors have no such child and no padding, so
+     * the anchor itself is used there.
+     */
+    const thumbnailBoxSelector = "yt-thumbnail-view-model";
+    /** Class added to a statically positioned box so it becomes the button's containing block. */
+    const boxClass = "yfas-thumb-box";
     /** Extracts a video id from a thumbnail anchor's href (watch / shorts / live / embed forms). */
     function videoIdFromHref(href) {
         try {
@@ -2867,6 +2970,7 @@ select.yfas-input {
     const buttonLabel = () => t("button.summarizeWith", getProviderById(config.getData().provider).label);
     /** Injects the overlay button into a thumbnail anchor the first time it's hovered. */
     function injectButton(anchor) {
+        var _a;
         if (anchor.dataset[processedFlag])
             return;
         anchor.dataset[processedFlag] = "1";
@@ -2886,7 +2990,12 @@ select.yfas-input {
         btn.setAttribute("aria-label", label);
         setInnerHtml(btn, sparkleIcon);
         onInteraction(btn, () => void onThumbClick(btn, videoId));
-        anchor.appendChild(btn);
+        const box = (_a = anchor.querySelector(thumbnailBoxSelector)) !== null && _a !== void 0 ? _a : anchor;
+        // Only force `relative` when the box isn't positioned already: classic `a#thumbnail` anchors are
+        // `position: absolute`, and overriding that would break their layout.
+        if (getComputedStyle(box).position === "static")
+            box.classList.add(boxClass);
+        box.appendChild(btn);
     }
     /** Toggles an overlay button's busy state: swaps the sparkle for the spinner and blocks re-clicks. */
     function setBusy$1(btn, busy) {
@@ -2945,9 +3054,17 @@ select.yfas-input {
             }
         });
     }
+    /** Root attribute carrying the chosen corner, so a single stylesheet positions every button. */
+    const positionAttr = "data-yfas-thumb-pos";
+    /** Mirrors the `thumbButtonPosition` setting onto the root element (CSS does the rest). */
+    function applyPosition() {
+        document.documentElement.setAttribute(positionAttr, config.getData().thumbButtonPosition);
+    }
     /** Lazily injects a button when the pointer first enters a thumbnail (handles infinite scroll for free). */
     function onPointerOver(e) {
         var _a;
+        if (config.getData().thumbButtonPosition === "off")
+            return;
         const target = e.target;
         const anchor = (_a = target === null || target === void 0 ? void 0 : target.closest) === null || _a === void 0 ? void 0 : _a.call(target, thumbnailAnchorSelector);
         if (anchor)
@@ -2964,13 +3081,15 @@ select.yfas-input {
     /** Registers the thumbnail overlay. Call once on the YouTube side after DOM load. */
     function initThumbnailButtons() {
         addStyle(thumbnailStyle, "yfas-thumb");
+        applyPosition();
+        window.addEventListener("yfas-config-changed", applyPosition);
         // Event delegation over the whole body: cheaper than observing every list container, and it
         // naturally covers thumbnails added later by SPA navigation and infinite scroll.
         document.body.addEventListener("pointerover", onPointerOver, { capture: true, passive: true });
         window.addEventListener("yfas-lang-changed", relabelButtons);
     }
     const thumbnailStyle = `
-.${hostClass} {
+.${boxClass} {
   position: relative;
 }
 .${btnClass} {
@@ -2991,6 +3110,23 @@ select.yfas-input {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.12s ease, background 0.12s ease;
+}
+[${positionAttr}="top-right"] .${btnClass} {
+  left: auto;
+  right: 4px;
+}
+[${positionAttr}="bottom-left"] .${btnClass} {
+  top: auto;
+  bottom: 4px;
+}
+[${positionAttr}="bottom-right"] .${btnClass} {
+  top: auto;
+  left: auto;
+  bottom: 4px;
+  right: 4px;
+}
+[${positionAttr}="off"] .${btnClass} {
+  display: none;
 }
 .${btnClass}:hover {
   background: rgba(0, 0, 0, 0.92);

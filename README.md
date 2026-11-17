@@ -20,7 +20,7 @@ Once installed, a **Summarize** button (outlined in red) appears next to the lik
 - **Choice of AI service** — Google AI Studio, Gemini, ChatGPT, Claude, or Grok — pick your usual one in the settings
 - **Works on restricted videos** — Members-only, age-restricted and region-locked videos can be summarized too, as long as you can watch them yourself
 - **Long videos aren't cut short** — The whole transcript reaches the AI, so the summary won't stop halfway through
-- **Summarize without opening the video** — Hover any video thumbnail for a button that summarizes it right there
+- **Summarize without opening the video** — Hover any video thumbnail for a button that summarizes it right there; pick which corner it sits in, or turn it off, in the settings
 - **Custom prompt** — Write your own prompt in the settings to control how the AI summarizes and what it focuses on
 
 ## Installation
@@ -47,6 +47,8 @@ You can also install the `.user.js` from this repo's `dist/` directly.
 4. If you aren't signed in to that AI site yet, sign in once — a normal free account is enough, no API key and no payment
 5. To switch to a different AI or change any setting, press the gear next to the Summarize button
 
+If the button doesn't show up when you hover a thumbnail, turn off video previews on hover in [YouTube's playback settings](https://www.youtube.com/account_playback).
+
 ## Privacy
 
 - **Subtitles go only to the AI you picked** — The script has no server of its own. The captured subtitles are placed into the chat of the AI service you chose, in your own browser, and nowhere else
@@ -58,7 +60,6 @@ Planned features and fixes:
 
 - **Stop playback on members-only videos** — Pause playback automatically when a members-only video is opened to capture its subtitles
 - **Skip auto-translated subtitles** — Bypass machine-translated tracks and fetch the untranslated auto-generated transcript or creator-uploaded subtitles/translations instead
-- **Configurable thumbnail button position** — Place the quick-summarize icon in the top-left, bottom-left, or bottom-right corner of thumbnails, or hide it altogether
 - **Opt out of signed-in subtitle capture** — An option to stop the thumbnail button from using your YouTube sign-in for restricted videos, opening them in a short-lived tab instead
 - **Browser extension version** — A packaged browser extension in addition to the userscript
 

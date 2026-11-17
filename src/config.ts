@@ -15,19 +15,19 @@ export const getDefaultConfig = (): ScriptConfig => ({
   includeTimestamps: true,
   autoSubmit: true,
   preferredLangs: "",
+  thumbButtonPosition: "top-left",
 });
 
 export const config = new DataStore({
   id: "script-config",
   defaultData: getDefaultConfig() satisfies ScriptConfig,
   // increment this value if the data format changes:
-  formatVersion: 1,
+  formatVersion: 2,
   // functions that migrate data from older versions to newer ones:
   migrations: {
-    // migrate from v1 to v2:
-    // 2: (oldData) => {
-    //   return { ...oldData, newProp: "foo" };
-    // },
+    // v1 -> v2: added `thumbButtonPosition` (top-left was the only placement before)
+    2: (oldData: Omit<ScriptConfig, "thumbButtonPosition">): ScriptConfig =>
+      ({ ...oldData, thumbButtonPosition: "top-left" }),
   },
   encodeData: (data) => canCompress ? compress(data, compressionFormat, "string") : data,
   decodeData: (data) => canCompress ? decompress(data, compressionFormat, "string") : data,

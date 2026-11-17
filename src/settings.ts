@@ -3,13 +3,14 @@
  * Reads/writes the persisted {@linkcode config} DataStore.
  */
 
-import { config } from "./config";
+import { config, getDefaultConfig } from "./config";
 import {
   applyI18n, AUTO_LANG, getActiveLanguage, resolveLanguage, setActiveLanguage,
   supportedLanguages, t, translate, type LangCode,
 } from "./i18n";
 import { openModal } from "./modal";
 import { defaultProvider, getProviderById, providers } from "./providers";
+import type { ThumbButtonPosition } from "./types";
 import { addStyle, setInnerHtml } from "./utils";
 
 const overlayId = "yfas-settings-overlay";
@@ -55,6 +56,18 @@ export function openSettings(): void {
         <input type="text" class="yfas-input" data-field="preferredLangs" data-i18n-placeholder="settings.langs.placeholder" />
       </label>
 
+      <label class="yfas-field">
+        <span class="yfas-field-label" data-i18n="settings.thumbPos.label"></span>
+        <span class="yfas-field-hint" data-i18n-html="settings.thumbPos.hint"></span>
+        <select class="yfas-input" data-field="thumbButtonPosition">
+          <option value="top-left" data-i18n="settings.thumbPos.topLeft"></option>
+          <option value="top-right" data-i18n="settings.thumbPos.topRight"></option>
+          <option value="bottom-left" data-i18n="settings.thumbPos.bottomLeft"></option>
+          <option value="bottom-right" data-i18n="settings.thumbPos.bottomRight"></option>
+          <option value="off" data-i18n="settings.thumbPos.off"></option>
+        </select>
+      </label>
+
       <label class="yfas-check">
         <input type="checkbox" data-field="includeTimestamps" />
         <span data-i18n-html="settings.timestamps"></span>
@@ -86,6 +99,7 @@ export function openSettings(): void {
   const langEl = overlay.querySelector<HTMLInputElement>("[data-field='preferredLangs']")!;
   const tsEl = overlay.querySelector<HTMLInputElement>("[data-field='includeTimestamps']")!;
   const autoEl = overlay.querySelector<HTMLInputElement>("[data-field='autoSubmit']")!;
+  const thumbPosEl = overlay.querySelector<HTMLSelectElement>("[data-field='thumbButtonPosition']")!;
 
   // The raw language setting the user has picked (persisted verbatim: `"auto"` or a locale code) and
   // the concrete locale it currently resolves to (used to render the panel and provider note).
@@ -118,6 +132,7 @@ export function openSettings(): void {
   langEl.value = data.preferredLangs;
   tsEl.checked = data.includeTimestamps;
   autoEl.checked = data.autoSubmit;
+  thumbPosEl.value = data.thumbButtonPosition;
   localize(previewLang);
 
   // Keep the provider note in sync with the dropdown.
@@ -148,6 +163,7 @@ export function openSettings(): void {
     langEl.value = "";
     tsEl.checked = true;
     autoEl.checked = true;
+    thumbPosEl.value = getDefaultConfig().thumbButtonPosition;
   });
 
   overlay.querySelector("[data-action='save']")!.addEventListener("click", () => {
@@ -159,7 +175,10 @@ export function openSettings(): void {
       preferredLangs: langEl.value.trim(),
       includeTimestamps: tsEl.checked,
       autoSubmit: autoEl.checked,
+      thumbButtonPosition: thumbPosEl.value as ThumbButtonPosition,
     });
+    // Let live UI (the thumbnail buttons) pick up the new settings without a reload.
+    window.dispatchEvent(new Event("yfas-config-changed"));
     // Apply the chosen language immediately so the rest of the page updates without a reload.
     // `previewLang` already holds resolveLanguage(selectedLangSetting) (kept in sync above).
     if(previewLang !== getActiveLanguage()) {
@@ -188,6 +207,10 @@ const settingsStyle = `
   font-size: 1.2rem;
   opacity: 0.7;
   margin-bottom: 6px;
+}
+.yfas-field-hint a {
+  color: var(--yt-spec-call-to-action, #065fd4);
+  text-decoration: underline;
 }
 .yfas-field-hint code,
 .yfas-check code {
