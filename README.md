@@ -47,6 +47,11 @@ You can also install the `.user.js` from this repo's `dist/` directly.
 4. If you aren't signed in to that AI site yet, sign in once — a normal free account is enough, no API key and no payment
 5. To switch to a different AI or change any setting, press the gear next to the Summarize button
 
+## Privacy
+
+- **Subtitles go only to the AI you picked** — The script has no server of its own. The captured subtitles are placed into the chat of the AI service you chose, in your own browser, and nowhere else
+- **Your YouTube sign-in is used only with YouTube** — When you summarize a restricted video (members-only, age-restricted) from its thumbnail, the script asks YouTube for the subtitles as you, using the sign-in already in your browser. That request goes to `youtube.com` only; your sign-in is never stored, logged, or sent to the AI service or anyone else
+
 ## Roadmap
 
 Planned features and fixes:
@@ -54,6 +59,7 @@ Planned features and fixes:
 - **Stop playback on members-only videos** — Pause playback automatically when a members-only video is opened to capture its subtitles
 - **Skip auto-translated subtitles** — Bypass machine-translated tracks and fetch the untranslated auto-generated transcript or creator-uploaded subtitles/translations instead
 - **Configurable thumbnail button position** — Place the quick-summarize icon in the top-left, bottom-left, or bottom-right corner of thumbnails, or hide it altogether
+- **Opt out of signed-in subtitle capture** — An option to stop the thumbnail button from using your YouTube sign-in for restricted videos, opening them in a short-lived tab instead
 - **Browser extension version** — A packaged browser extension in addition to the userscript
 
 ## Development

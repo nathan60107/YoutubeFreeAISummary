@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.10.0
+// @version           0.11.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=25a4a12
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=80bb4e4
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=25a4a12
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=80bb4e4
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "github";
-    const buildNumberRaw = "25a4a12";
+    const buildNumberRaw = "80bb4e4";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -1445,9 +1445,16 @@
      * gated, so we can fetch it as `fmt=json3` and parse it with the same code path as the watch page.
      * The request is same-origin (we're on youtube.com), so it just works under YouTube's CSP.
      *
-     * Known limitation: this uses the *unauthenticated* ANDROID player (no SAPISIDHASH), so member-only
-     * / age-restricted / private videos return no caption tracks off-page. Those still need the watch
-     * page, where the interceptor strategy handles them with the user's real session.
+     * The ANDROID request is *unauthenticated* (that client ignores the web session), so member-only /
+     * age-restricted / private videos come back unplayable. For those we fall back to a second request:
+     * the **WEB** client, authenticated with the user's session (`SAPISIDHASH`), but with a *minimal*
+     * client context. The PoToken gating of caption URLs is switched on by the experiment config the
+     * page normally sends along (`context.client.configInfo`); leave it out and the very same WEB
+     * client hands back plain, directly fetchable `baseUrl`s — for exactly the videos the signed-in
+     * user is entitled to watch.
+     *
+     * Only when both fail (e.g. signed out, or YouTube closes that gap) does the caller fall back to
+     * opening the watch page, where the interceptor strategy uses the real player.
      */
     /**
      * ANDROID InnerTube client identity. The ANDROID client's caption `baseUrl`s aren't PoToken-gated,
@@ -1503,6 +1510,84 @@
             return yield res.json();
         });
     }
+    /** Fallback WEB client version, used only if the page's own (`ytcfg`) can't be read. */
+    const FALLBACK_WEB_CLIENT_VERSION = "2.20260101.00.00";
+    /** Reads a string value from the page's `ytcfg`, or `undefined` if it's missing/unreadable. */
+    function getYtcfgString(key) {
+        var _a, _b, _c, _d, _e;
+        try {
+            const value = (_c = (_b = (_a = pageWindow$2.ytcfg) === null || _a === void 0 ? void 0 : _a.get) === null || _b === void 0 ? void 0 : _b.call(_a, key)) !== null && _c !== void 0 ? _c : (_e = (_d = pageWindow$2.ytcfg) === null || _d === void 0 ? void 0 : _d.data_) === null || _e === void 0 ? void 0 : _e[key];
+            if (typeof value === "string" && value.length > 0)
+                return value;
+            if (typeof value === "number")
+                return String(value);
+        }
+        catch ( /* unreadable — treat as missing */_f) { /* unreadable — treat as missing */ }
+        return undefined;
+    }
+    /**
+     * Builds the `Authorization: SAPISIDHASH …` value that authenticates an InnerTube request as the
+     * signed-in user, or `null` when no session cookie is readable (signed out).
+     */
+    function buildSapisidHash() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const sapisid = (_a = /(?:^|;\s*)(?:SAPISID|__Secure-3PAPISID)=([^;]+)/.exec(document.cookie)) === null || _a === void 0 ? void 0 : _a[1];
+            if (!sapisid)
+                return null;
+            const timestamp = Math.floor(Date.now() / 1000);
+            const digest = yield crypto.subtle.digest("SHA-1", new TextEncoder().encode(`${timestamp} ${sapisid} ${location.origin}`));
+            const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+            return `SAPISIDHASH ${timestamp}_${hex}`;
+        });
+    }
+    /**
+     * Fetches a player response for `videoId` as the signed-in user via the WEB client, for gated
+     * videos the anonymous ANDROID request can't play. Returns `null` when signed out or on HTTP error.
+     *
+     * The client context is deliberately minimal: sending the page's full `INNERTUBE_CONTEXT` (namely
+     * its `configInfo` experiment blob) makes YouTube return PoToken-gated (`exp=xpe`) caption URLs,
+     * whose bodies are empty when fetched directly. Don't "improve" this by passing the full context.
+     */
+    function fetchAuthedWebPlayerResponse(videoId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const authorization = yield buildSapisidHash();
+            if (!authorization)
+                return null;
+            const hl = (navigator.language || "en").split("-")[0];
+            const headers = {
+                "Content-Type": "application/json",
+                "Authorization": authorization,
+                "X-Origin": location.origin,
+                "X-Goog-AuthUser": (_a = getYtcfgString("SESSION_INDEX")) !== null && _a !== void 0 ? _a : "0",
+            };
+            // Set when the user is acting as a brand account/channel; memberships belong to that identity.
+            const pageId = getYtcfgString("DELEGATED_SESSION_ID");
+            if (pageId)
+                headers["X-Goog-PageId"] = pageId;
+            const res = yield fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+                method: "POST",
+                credentials: "include",
+                headers,
+                body: JSON.stringify({
+                    context: {
+                        client: {
+                            clientName: "WEB",
+                            clientVersion: (_b = getYtcfgString("INNERTUBE_CLIENT_VERSION")) !== null && _b !== void 0 ? _b : FALLBACK_WEB_CLIENT_VERSION,
+                            hl,
+                        },
+                    },
+                    videoId,
+                }),
+            });
+            if (!res.ok) {
+                warn(`Authenticated InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
+                return null;
+            }
+            return yield res.json();
+        });
+    }
     /** Fetches a caption track's `baseUrl` as `fmt=json3` and parses it into segments. */
     function fetchTrackSegments(baseUrl) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1519,28 +1604,25 @@
         });
     }
     /**
-     * Captures subtitles for `videoId` without opening its watch page.
-     * Returns `null` if the video has no caption tracks at all.
+     * Turns a fetched player response into a subtitle result.
+     * Returns `null` if the video is playable but has no caption tracks at all.
      *
-     * @throws if the video is gated (login/age) or a track exists but its text couldn't be fetched.
+     * @throws if the response is missing/unplayable or a track exists but its text couldn't be fetched.
      */
-    function getSubtitlesForVideo(videoId_1) {
-        return __awaiter(this, arguments, void 0, function* (videoId, opts = {}) {
-            var _a, _b, _c, _d, _e, _f;
-            const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
-            const resp = yield fetchAndroidPlayerResponse(videoId);
-            const tracks = getCaptionTracks(resp !== null && resp !== void 0 ? resp : undefined);
-            const track = pickTrack(tracks, preferredLangs);
+    function captureFromPlayerResponse(videoId, resp, preferredLangs) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c, _d, _e;
+            if (!resp)
+                throw new Error(`No player response for ${videoId}`);
+            const track = pickTrack(getCaptionTracks(resp), preferredLangs);
             if (!track) {
-                // No tracks can mean "genuinely no captions" or "the ANDROID player couldn't play it" (member-
-                // only / age-restricted / private): distinguish so the failure message can point to the watch page.
-                const status = (_b = resp === null || resp === void 0 ? void 0 : resp.playabilityStatus) === null || _b === void 0 ? void 0 : _b.status;
+                // No tracks can mean "genuinely no captions" or "this client couldn't play it" (member-only /
+                // age-restricted / private): distinguish so the caller can try another way in.
+                const status = (_a = resp.playabilityStatus) === null || _a === void 0 ? void 0 : _a.status;
                 if (status && status !== "OK")
-                    throw new Error(`Video ${videoId} is not accessible off-page (${status}); open the watch page to summarize it`);
+                    throw new Error(`Video ${videoId} is not accessible off-page (${status})`);
                 return null; // no captions at all
             }
-            const videoTitle = (_d = (_c = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _c === void 0 ? void 0 : _c.title) !== null && _d !== void 0 ? _d : "";
-            const videoChannel = (_f = (_e = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _e === void 0 ? void 0 : _e.author) !== null && _f !== void 0 ? _f : "";
             if (!track.baseUrl)
                 throw new Error(`Caption track for ${videoId} has no baseUrl to fetch`);
             const segments = yield fetchTrackSegments(track.baseUrl);
@@ -1548,8 +1630,8 @@
                 throw new Error(`Found a caption track for ${videoId} but its timedtext body was empty`);
             return {
                 videoId,
-                videoTitle,
-                videoChannel,
+                videoTitle: (_c = (_b = resp.videoDetails) === null || _b === void 0 ? void 0 : _b.title) !== null && _c !== void 0 ? _c : "",
+                videoChannel: (_e = (_d = resp.videoDetails) === null || _d === void 0 ? void 0 : _d.author) !== null && _e !== void 0 ? _e : "",
                 videoUrl: watchUrl(videoId),
                 lang: track.languageCode,
                 trackName: trackName(track),
@@ -1558,6 +1640,28 @@
                 timedText: toTimedText(segments),
                 source: "innertube-player",
             };
+        });
+    }
+    /**
+     * Captures subtitles for `videoId` without opening its watch page: first through the anonymous
+     * ANDROID player, then — for gated videos it can't play — through the signed-in WEB player.
+     * Returns `null` if the video has no caption tracks at all.
+     *
+     * @throws if neither player could reach the video or its caption text; open the watch page instead.
+     */
+    function getSubtitlesForVideo(videoId_1) {
+        return __awaiter(this, arguments, void 0, function* (videoId, opts = {}) {
+            var _a;
+            const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
+            try {
+                return yield captureFromPlayerResponse(videoId, yield fetchAndroidPlayerResponse(videoId), preferredLangs);
+            }
+            catch (err) {
+                // TODO: once the thumbnail button gets its own settings (on/off, position), add an option to
+                // skip this signed-in retry and go straight to the auto-summary tab instead (see README roadmap).
+                warn(`ANDROID off-page capture failed for ${videoId}; retrying with the signed-in WEB player:`, err);
+            }
+            return yield captureFromPlayerResponse(videoId, yield fetchAuthedWebPlayerResponse(videoId), preferredLangs);
         });
     }
 
@@ -2387,8 +2491,8 @@
     }
 
     /**
-     * "Auto-summary tab" — the off-page path for gated videos (member-only / age-restricted) that the
-     * unauthenticated ANDROID player can't reach.
+     * "Auto-summary tab" — the last-resort path for gated videos (member-only / age-restricted) that
+     * neither off-page InnerTube request in `remote-subtitles.ts` could capture.
      *
      * Instead of navigating the user's current tab (which loses their feed scroll position), we open the
      * video's watch page in a *new* tab carrying a `#yfas-autosummarize` marker. That tab has the real,
@@ -2719,9 +2823,10 @@ select.yfas-input {
      * Off-page summary trigger: a small sparkle button that fades in over any video thumbnail (home,
      * search, related, channel, …). Clicking it summarizes that video without the user opening it.
      *
-     * Public videos are captured entirely off-page via the ANDROID InnerTube player (`remote-subtitles.ts`).
-     * Gated videos (member-only / age-restricted), which that unauthenticated player can't reach, fall
-     * back to a new auto-summary tab that captures with the user's real session (`auto-summarize.ts`).
+     * Videos are captured entirely off-page via InnerTube player requests (`remote-subtitles.ts`): the
+     * anonymous ANDROID player for public videos, then the signed-in WEB player for gated ones
+     * (member-only / age-restricted). Only if both fail do we fall back to a new auto-summary tab that
+     * captures with the real player (`auto-summarize.ts`).
      */
     /** Class of the injected overlay button, also used to guard against double-injection. */
     const btnClass = "yfas-thumb-btn";
@@ -2789,10 +2894,10 @@ select.yfas-input {
         setInnerHtml(btn, busy ? loadingIcon : sparkleIcon);
     }
     /**
-     * Summarizes a thumbnail's video. Tries the fast ANDROID InnerTube player first (fully off-page,
-     * covers public videos). If that throws, the video is gated (member-only / age-restricted) — the
-     * unauthenticated player exposed no tracks — so we open a new auto-summary tab that captures it with
-     * the user's real session and closes itself. A `null` from the fast path means "genuinely no captions".
+     * Summarizes a thumbnail's video. Tries the off-page InnerTube capture first (anonymous ANDROID for
+     * public videos, then the user's sign-in for gated ones). If that throws, the video couldn't be
+     * reached off-page, so we open a new auto-summary tab that captures it with the real player and
+     * closes itself. A `null` from the off-page capture means "genuinely no captions".
      */
     function onThumbClick(btn, videoId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2808,9 +2913,9 @@ select.yfas-input {
                     result = yield getSubtitlesForVideo(videoId, opts);
                 }
                 catch (err) {
-                    // Gated video: open a new tab that captures it with the user's real session and closes itself.
+                    // Couldn't capture off-page: open a new tab that captures it with the real player and closes itself.
                     // The user's feed tab stays put (scroll position preserved).
-                    warn(`ANDROID off-page capture failed for ${videoId}; opening an auto-summary tab:`, err);
+                    warn(`Off-page capture failed for ${videoId}; opening an auto-summary tab:`, err);
                     openAutoSummaryTab(videoId);
                     return;
                 }

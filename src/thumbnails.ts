@@ -2,9 +2,10 @@
  * Off-page summary trigger: a small sparkle button that fades in over any video thumbnail (home,
  * search, related, channel, …). Clicking it summarizes that video without the user opening it.
  *
- * Public videos are captured entirely off-page via the ANDROID InnerTube player (`remote-subtitles.ts`).
- * Gated videos (member-only / age-restricted), which that unauthenticated player can't reach, fall
- * back to a new auto-summary tab that captures with the user's real session (`auto-summarize.ts`).
+ * Videos are captured entirely off-page via InnerTube player requests (`remote-subtitles.ts`): the
+ * anonymous ANDROID player for public videos, then the signed-in WEB player for gated ones
+ * (member-only / age-restricted). Only if both fail do we fall back to a new auto-summary tab that
+ * captures with the real player (`auto-summarize.ts`).
  */
 
 import { openAutoSummaryTab } from "./auto-summarize";
@@ -95,10 +96,10 @@ function setBusy(btn: HTMLElement, busy: boolean): void {
 }
 
 /**
- * Summarizes a thumbnail's video. Tries the fast ANDROID InnerTube player first (fully off-page,
- * covers public videos). If that throws, the video is gated (member-only / age-restricted) — the
- * unauthenticated player exposed no tracks — so we open a new auto-summary tab that captures it with
- * the user's real session and closes itself. A `null` from the fast path means "genuinely no captions".
+ * Summarizes a thumbnail's video. Tries the off-page InnerTube capture first (anonymous ANDROID for
+ * public videos, then the user's sign-in for gated ones). If that throws, the video couldn't be
+ * reached off-page, so we open a new auto-summary tab that captures it with the real player and
+ * closes itself. A `null` from the off-page capture means "genuinely no captions".
  */
 async function onThumbClick(btn: HTMLElement, videoId: string): Promise<void> {
   if (btn.classList.contains("yfas-busy"))
@@ -114,9 +115,9 @@ async function onThumbClick(btn: HTMLElement, videoId: string): Promise<void> {
       result = await getSubtitlesForVideo(videoId, opts);
     }
     catch (err) {
-      // Gated video: open a new tab that captures it with the user's real session and closes itself.
+      // Couldn't capture off-page: open a new tab that captures it with the real player and closes itself.
       // The user's feed tab stays put (scroll position preserved).
-      warn(`ANDROID off-page capture failed for ${videoId}; opening an auto-summary tab:`, err);
+      warn(`Off-page capture failed for ${videoId}; opening an auto-summary tab:`, err);
       openAutoSummaryTab(videoId);
       return;
     }

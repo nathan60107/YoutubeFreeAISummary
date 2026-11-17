@@ -1,6 +1,6 @@
 /**
- * "Auto-summary tab" — the off-page path for gated videos (member-only / age-restricted) that the
- * unauthenticated ANDROID player can't reach.
+ * "Auto-summary tab" — the last-resort path for gated videos (member-only / age-restricted) that
+ * neither off-page InnerTube request in `remote-subtitles.ts` could capture.
  *
  * Instead of navigating the user's current tab (which loses their feed scroll position), we open the
  * video's watch page in a *new* tab carrying a `#yfas-autosummarize` marker. That tab has the real,

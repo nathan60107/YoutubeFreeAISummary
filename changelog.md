@@ -1,3 +1,7 @@
+# 0.11.0
+- Summarize member-only and age-restricted videos straight from their thumbnail without opening them: the script now asks YouTube for the subtitles with your existing sign-in, and only falls back to the short-lived tab if that fails
+- Add a Privacy section to the README explaining that your YouTube sign-in is only ever sent to YouTube
+
 # 0.10.0
 - Include the channel name in the summary: the default prompt now passes it to the AI (via a new `{{channel}}` token), giving the summary the context of who made the video
 

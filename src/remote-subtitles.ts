@@ -13,9 +13,16 @@
  * gated, so we can fetch it as `fmt=json3` and parse it with the same code path as the watch page.
  * The request is same-origin (we're on youtube.com), so it just works under YouTube's CSP.
  *
- * Known limitation: this uses the *unauthenticated* ANDROID player (no SAPISIDHASH), so member-only
- * / age-restricted / private videos return no caption tracks off-page. Those still need the watch
- * page, where the interceptor strategy handles them with the user's real session.
+ * The ANDROID request is *unauthenticated* (that client ignores the web session), so member-only /
+ * age-restricted / private videos come back unplayable. For those we fall back to a second request:
+ * the **WEB** client, authenticated with the user's session (`SAPISIDHASH`), but with a *minimal*
+ * client context. The PoToken gating of caption URLs is switched on by the experiment config the
+ * page normally sends along (`context.client.configInfo`); leave it out and the very same WEB
+ * client hands back plain, directly fetchable `baseUrl`s — for exactly the videos the signed-in
+ * user is entitled to watch.
+ *
+ * Only when both fail (e.g. signed out, or YouTube closes that gap) does the caller fall back to
+ * opening the watch page, where the interceptor strategy uses the real player.
  */
 
 import {
@@ -106,6 +113,88 @@ async function fetchAndroidPlayerResponse(videoId: string): Promise<YtPlayerResp
   return await res.json() as YtPlayerResponse;
 }
 
+/** Fallback WEB client version, used only if the page's own (`ytcfg`) can't be read. */
+const FALLBACK_WEB_CLIENT_VERSION = "2.20260101.00.00";
+
+/** Reads a string value from the page's `ytcfg`, or `undefined` if it's missing/unreadable. */
+function getYtcfgString(key: string): string | undefined {
+  try {
+    const value = pageWindow.ytcfg?.get?.(key) ?? pageWindow.ytcfg?.data_?.[key];
+    if(typeof value === "string" && value.length > 0)
+      return value;
+    if(typeof value === "number")
+      return String(value);
+  }
+  catch { /* unreadable — treat as missing */ }
+  return undefined;
+}
+
+/**
+ * Builds the `Authorization: SAPISIDHASH …` value that authenticates an InnerTube request as the
+ * signed-in user, or `null` when no session cookie is readable (signed out).
+ */
+async function buildSapisidHash(): Promise<string | null> {
+  const sapisid = /(?:^|;\s*)(?:SAPISID|__Secure-3PAPISID)=([^;]+)/.exec(document.cookie)?.[1];
+  if(!sapisid)
+    return null;
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const digest = await crypto.subtle.digest(
+    "SHA-1",
+    new TextEncoder().encode(`${timestamp} ${sapisid} ${location.origin}`),
+  );
+  const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+  return `SAPISIDHASH ${timestamp}_${hex}`;
+}
+
+/**
+ * Fetches a player response for `videoId` as the signed-in user via the WEB client, for gated
+ * videos the anonymous ANDROID request can't play. Returns `null` when signed out or on HTTP error.
+ *
+ * The client context is deliberately minimal: sending the page's full `INNERTUBE_CONTEXT` (namely
+ * its `configInfo` experiment blob) makes YouTube return PoToken-gated (`exp=xpe`) caption URLs,
+ * whose bodies are empty when fetched directly. Don't "improve" this by passing the full context.
+ */
+async function fetchAuthedWebPlayerResponse(videoId: string): Promise<YtPlayerResponse | null> {
+  const authorization = await buildSapisidHash();
+  if(!authorization)
+    return null;
+
+  const hl = (navigator.language || "en").split("-")[0];
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Authorization": authorization,
+    "X-Origin": location.origin,
+    "X-Goog-AuthUser": getYtcfgString("SESSION_INDEX") ?? "0",
+  };
+  // Set when the user is acting as a brand account/channel; memberships belong to that identity.
+  const pageId = getYtcfgString("DELEGATED_SESSION_ID");
+  if(pageId)
+    headers["X-Goog-PageId"] = pageId;
+
+  const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({
+      context: {
+        client: {
+          clientName: "WEB",
+          clientVersion: getYtcfgString("INNERTUBE_CLIENT_VERSION") ?? FALLBACK_WEB_CLIENT_VERSION,
+          hl,
+        },
+      },
+      videoId,
+    }),
+  });
+
+  if(!res.ok) {
+    warn(`Authenticated InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
+    return null;
+  }
+  return await res.json() as YtPlayerResponse;
+}
+
 /** Fetches a caption track's `baseUrl` as `fmt=json3` and parses it into segments. */
 async function fetchTrackSegments(baseUrl: string) {
   const url = new URL(baseUrl, "https://www.youtube.com");
@@ -127,32 +216,28 @@ async function fetchTrackSegments(baseUrl: string) {
 type PlayerResponseWithStatus = YtPlayerResponse & { playabilityStatus?: { status?: string } };
 
 /**
- * Captures subtitles for `videoId` without opening its watch page.
- * Returns `null` if the video has no caption tracks at all.
+ * Turns a fetched player response into a subtitle result.
+ * Returns `null` if the video is playable but has no caption tracks at all.
  *
- * @throws if the video is gated (login/age) or a track exists but its text couldn't be fetched.
+ * @throws if the response is missing/unplayable or a track exists but its text couldn't be fetched.
  */
-export async function getSubtitlesForVideo(
+async function captureFromPlayerResponse(
   videoId: string,
-  opts: CaptureOptions = {},
+  resp: PlayerResponseWithStatus | null,
+  preferredLangs: string[],
 ): Promise<RemoteSubtitleResult | null> {
-  const preferredLangs = opts.preferredLangs ?? defaultPreferredLangs();
+  if(!resp)
+    throw new Error(`No player response for ${videoId}`);
 
-  const resp = await fetchAndroidPlayerResponse(videoId) as PlayerResponseWithStatus | null;
-  const tracks = getCaptionTracks(resp ?? undefined);
-  const track = pickTrack(tracks, preferredLangs);
-
+  const track = pickTrack(getCaptionTracks(resp), preferredLangs);
   if(!track) {
-    // No tracks can mean "genuinely no captions" or "the ANDROID player couldn't play it" (member-
-    // only / age-restricted / private): distinguish so the failure message can point to the watch page.
-    const status = resp?.playabilityStatus?.status;
+    // No tracks can mean "genuinely no captions" or "this client couldn't play it" (member-only /
+    // age-restricted / private): distinguish so the caller can try another way in.
+    const status = resp.playabilityStatus?.status;
     if(status && status !== "OK")
-      throw new Error(`Video ${videoId} is not accessible off-page (${status}); open the watch page to summarize it`);
+      throw new Error(`Video ${videoId} is not accessible off-page (${status})`);
     return null; // no captions at all
   }
-
-  const videoTitle = resp?.videoDetails?.title ?? "";
-  const videoChannel = resp?.videoDetails?.author ?? "";
 
   if(!track.baseUrl)
     throw new Error(`Caption track for ${videoId} has no baseUrl to fetch`);
@@ -163,8 +248,8 @@ export async function getSubtitlesForVideo(
 
   return {
     videoId,
-    videoTitle,
-    videoChannel,
+    videoTitle: resp.videoDetails?.title ?? "",
+    videoChannel: resp.videoDetails?.author ?? "",
     videoUrl: watchUrl(videoId),
     lang: track.languageCode,
     trackName: trackName(track),
@@ -173,4 +258,29 @@ export async function getSubtitlesForVideo(
     timedText: toTimedText(segments),
     source: "innertube-player",
   };
+}
+
+/**
+ * Captures subtitles for `videoId` without opening its watch page: first through the anonymous
+ * ANDROID player, then — for gated videos it can't play — through the signed-in WEB player.
+ * Returns `null` if the video has no caption tracks at all.
+ *
+ * @throws if neither player could reach the video or its caption text; open the watch page instead.
+ */
+export async function getSubtitlesForVideo(
+  videoId: string,
+  opts: CaptureOptions = {},
+): Promise<RemoteSubtitleResult | null> {
+  const preferredLangs = opts.preferredLangs ?? defaultPreferredLangs();
+
+  try {
+    return await captureFromPlayerResponse(videoId, await fetchAndroidPlayerResponse(videoId), preferredLangs);
+  }
+  catch(err) {
+    // TODO: once the thumbnail button gets its own settings (on/off, position), add an option to
+    // skip this signed-in retry and go straight to the auto-summary tab instead (see README roadmap).
+    warn(`ANDROID off-page capture failed for ${videoId}; retrying with the signed-in WEB player:`, err);
+  }
+
+  return await captureFromPlayerResponse(videoId, await fetchAuthedWebPlayerResponse(videoId), preferredLangs);
 }
