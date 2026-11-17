@@ -22,6 +22,7 @@ export const ja: Translations = {
   "settings.thumbPos.bottomLeft": "左下",
   "settings.thumbPos.bottomRight": "右下",
   "settings.thumbPos.off": "オフ",
+  "settings.signedInCapture": "サムネイルから制限付き動画を要約する際、YouTube のログイン状態を使って字幕を取得する（YouTube にのみ送信。オフの場合は動画をタブで開きます）",
   "settings.timestamps": "字幕にタイムスタンプを含める（<code>[h:mm:ss]</code>）",
   "settings.autoSubmit": "入力後に自動送信する",
   "settings.reset": "初期設定に戻す",

@@ -22,6 +22,7 @@ export const fr: Translations = {
   "settings.thumbPos.bottomLeft": "En bas à gauche",
   "settings.thumbPos.bottomRight": "En bas à droite",
   "settings.thumbPos.off": "Désactivé",
+  "settings.signedInCapture": "Utiliser ma connexion YouTube pour lire les sous-titres des vidéos restreintes depuis les miniatures (envoyée uniquement à YouTube ; si désactivé, la vidéo s'ouvre dans un onglet)",
   "settings.timestamps": "Inclure les horodatages dans les sous-titres (<code>[h:mm:ss]</code>)",
   "settings.autoSubmit": "Envoyer automatiquement après insertion",
   "settings.reset": "Réinitialiser aux valeurs par défaut",

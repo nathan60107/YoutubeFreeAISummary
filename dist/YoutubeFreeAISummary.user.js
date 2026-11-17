@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.12.0
+// @version           0.13.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=4b8cf48
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=65e5f40
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=4b8cf48
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=65e5f40
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "github";
-    const buildNumberRaw = "4b8cf48";
+    const buildNumberRaw = "65e5f40";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -157,6 +157,7 @@
         "settings.thumbPos.bottomLeft": "Bottom left",
         "settings.thumbPos.bottomRight": "Bottom right",
         "settings.thumbPos.off": "Off",
+        "settings.signedInCapture": "Use my YouTube sign-in to read restricted videos' subtitles from thumbnails (sent only to YouTube; when off, the video opens in a tab instead)",
         "settings.timestamps": "Include timestamps in subtitles (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Auto-submit after injecting",
         "settings.reset": "Reset to defaults",
@@ -227,6 +228,7 @@
         "settings.thumbPos.bottomLeft": "左下",
         "settings.thumbPos.bottomRight": "右下",
         "settings.thumbPos.off": "關閉",
+        "settings.signedInCapture": "從縮圖摘要受限影片時，使用我的 YouTube 登入狀態讀取字幕（只會傳送給 YouTube；關閉後改為開啟影片分頁）",
         "settings.timestamps": "字幕包含時間戳（<code>[h:mm:ss]</code>）",
         "settings.autoSubmit": "注入後自動送出",
         "settings.reset": "重設為預設",
@@ -289,6 +291,7 @@
         "settings.thumbPos.bottomLeft": "左下",
         "settings.thumbPos.bottomRight": "右下",
         "settings.thumbPos.off": "关闭",
+        "settings.signedInCapture": "从缩略图总结受限视频时，使用我的 YouTube 登录状态读取字幕（只会发送给 YouTube；关闭后改为打开视频标签页）",
         "settings.timestamps": "字幕包含时间戳（<code>[h:mm:ss]</code>）",
         "settings.autoSubmit": "注入后自动发送",
         "settings.reset": "重置为默认",
@@ -351,6 +354,7 @@
         "settings.thumbPos.bottomLeft": "左下",
         "settings.thumbPos.bottomRight": "右下",
         "settings.thumbPos.off": "オフ",
+        "settings.signedInCapture": "サムネイルから制限付き動画を要約する際、YouTube のログイン状態を使って字幕を取得する（YouTube にのみ送信。オフの場合は動画をタブで開きます）",
         "settings.timestamps": "字幕にタイムスタンプを含める（<code>[h:mm:ss]</code>）",
         "settings.autoSubmit": "入力後に自動送信する",
         "settings.reset": "初期設定に戻す",
@@ -413,6 +417,7 @@
         "settings.thumbPos.bottomLeft": "왼쪽 아래",
         "settings.thumbPos.bottomRight": "오른쪽 아래",
         "settings.thumbPos.off": "끄기",
+        "settings.signedInCapture": "썸네일에서 제한된 동영상을 요약할 때 내 YouTube 로그인 상태로 자막 가져오기 (YouTube에만 전송되며, 끄면 동영상을 탭으로 엽니다)",
         "settings.timestamps": "자막에 타임스탬프 포함 (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "입력 후 자동 전송",
         "settings.reset": "기본값으로 재설정",
@@ -475,6 +480,7 @@
         "settings.thumbPos.bottomLeft": "Abajo a la izquierda",
         "settings.thumbPos.bottomRight": "Abajo a la derecha",
         "settings.thumbPos.off": "Desactivado",
+        "settings.signedInCapture": "Usar mi sesión de YouTube para leer los subtítulos de vídeos restringidos desde las miniaturas (solo se envía a YouTube; si está desactivado, el vídeo se abre en una pestaña)",
         "settings.timestamps": "Incluir marcas de tiempo en los subtítulos (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Enviar automáticamente tras insertar",
         "settings.reset": "Restablecer valores predeterminados",
@@ -537,6 +543,7 @@
         "settings.thumbPos.bottomLeft": "En bas à gauche",
         "settings.thumbPos.bottomRight": "En bas à droite",
         "settings.thumbPos.off": "Désactivé",
+        "settings.signedInCapture": "Utiliser ma connexion YouTube pour lire les sous-titres des vidéos restreintes depuis les miniatures (envoyée uniquement à YouTube ; si désactivé, la vidéo s'ouvre dans un onglet)",
         "settings.timestamps": "Inclure les horodatages dans les sous-titres (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Envoyer automatiquement après insertion",
         "settings.reset": "Réinitialiser aux valeurs par défaut",
@@ -599,6 +606,7 @@
         "settings.thumbPos.bottomLeft": "Unten links",
         "settings.thumbPos.bottomRight": "Unten rechts",
         "settings.thumbPos.off": "Aus",
+        "settings.signedInCapture": "Meine YouTube-Anmeldung verwenden, um Untertitel eingeschränkter Videos über Vorschaubilder zu lesen (wird nur an YouTube gesendet; wenn aus, wird das Video stattdessen in einem Tab geöffnet)",
         "settings.timestamps": "Zeitstempel in Untertiteln einschließen (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Nach dem Einfügen automatisch absenden",
         "settings.reset": "Auf Standard zurücksetzen",
@@ -661,6 +669,7 @@
         "settings.thumbPos.bottomLeft": "Canto inferior esquerdo",
         "settings.thumbPos.bottomRight": "Canto inferior direito",
         "settings.thumbPos.off": "Desativado",
+        "settings.signedInCapture": "Usar meu login do YouTube para ler as legendas de vídeos restritos a partir das miniaturas (enviado apenas ao YouTube; se desativado, o vídeo é aberto em uma aba)",
         "settings.timestamps": "Incluir marcações de tempo nas legendas (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Enviar automaticamente após inserir",
         "settings.reset": "Restaurar padrões",
@@ -723,6 +732,7 @@
         "settings.thumbPos.bottomLeft": "Слева снизу",
         "settings.thumbPos.bottomRight": "Справа снизу",
         "settings.thumbPos.off": "Выключено",
+        "settings.signedInCapture": "Использовать мой вход в YouTube, чтобы получать субтитры видео с ограниченным доступом из миниатюр (отправляется только в YouTube; если выключено, видео откроется во вкладке)",
         "settings.timestamps": "Включать тайм-коды в субтитры (<code>[h:mm:ss]</code>)",
         "settings.autoSubmit": "Автоматически отправлять после вставки",
         "settings.reset": "Сбросить к настройкам по умолчанию",
@@ -1558,6 +1568,8 @@
     /**
      * Fetches a fresh player response for `videoId` from the InnerTube `player` endpoint using the
      * ANDROID client, so the caption `baseUrl`s it returns are usable without a PoToken.
+     *
+     * @throws on an HTTP error.
      */
     function fetchAndroidPlayerResponse(videoId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1573,10 +1585,8 @@
                 },
                 body: JSON.stringify({ context: { client: Object.assign(Object.assign({}, ANDROID_CLIENT), { hl }) }, videoId }),
             });
-            if (!res.ok) {
-                warn(`InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
-                return null;
-            }
+            if (!res.ok)
+                throw new Error(`ANDROID InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
             return yield res.json();
         });
     }
@@ -1613,18 +1623,20 @@
     }
     /**
      * Fetches a player response for `videoId` as the signed-in user via the WEB client, for gated
-     * videos the anonymous ANDROID request can't play. Returns `null` when signed out or on HTTP error.
+     * videos the anonymous ANDROID request can't play.
      *
      * The client context is deliberately minimal: sending the page's full `INNERTUBE_CONTEXT` (namely
      * its `configInfo` experiment blob) makes YouTube return PoToken-gated (`exp=xpe`) caption URLs,
      * whose bodies are empty when fetched directly. Don't "improve" this by passing the full context.
+     *
+     * @throws when signed out (no session cookie to authenticate with) or on an HTTP error.
      */
     function fetchAuthedWebPlayerResponse(videoId) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             const authorization = yield buildSapisidHash();
             if (!authorization)
-                return null;
+                throw new Error(`Can't fetch ${videoId} as the signed-in user: no YouTube session cookie (signed out?)`);
             const hl = (navigator.language || "en").split("-")[0];
             const headers = {
                 "Content-Type": "application/json",
@@ -1651,10 +1663,8 @@
                     videoId,
                 }),
             });
-            if (!res.ok) {
-                warn(`Authenticated InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
-                return null;
-            }
+            if (!res.ok)
+                throw new Error(`Authenticated InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
             return yield res.json();
         });
     }
@@ -1677,13 +1687,11 @@
      * Turns a fetched player response into a subtitle result.
      * Returns `null` if the video is playable but has no caption tracks at all.
      *
-     * @throws if the response is missing/unplayable or a track exists but its text couldn't be fetched.
+     * @throws if the video is unplayable for this client or a track exists but its text couldn't be fetched.
      */
     function captureFromPlayerResponse(videoId, resp, preferredLangs) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b, _c, _d, _e;
-            if (!resp)
-                throw new Error(`No player response for ${videoId}`);
             const track = pickTrack(getCaptionTracks(resp), preferredLangs);
             if (!track) {
                 // No tracks can mean "genuinely no captions" or "this client couldn't play it" (member-only /
@@ -1727,8 +1735,9 @@
                 return yield captureFromPlayerResponse(videoId, yield fetchAndroidPlayerResponse(videoId), preferredLangs);
             }
             catch (err) {
-                // TODO: once the thumbnail button gets its own settings (on/off, position), add an option to
-                // skip this signed-in retry and go straight to the auto-summary tab instead (see README roadmap).
+                // The user opted out of signed-in capture: let the caller fall back to the auto-summary tab.
+                if (opts.signedIn === false)
+                    throw err;
                 warn(`ANDROID off-page capture failed for ${videoId}; retrying with the signed-in WEB player:`, err);
             }
             return yield captureFromPlayerResponse(videoId, yield fetchAuthedWebPlayerResponse(videoId), preferredLangs);
@@ -2130,16 +2139,21 @@
         autoSubmit: true,
         preferredLangs: "",
         thumbButtonPosition: "top-left",
+        signedInCapture: true,
     });
     const config = new userutils.DataStore({
         id: "script-config",
         defaultData: getDefaultConfig(),
         // increment this value if the data format changes:
-        formatVersion: 2,
-        // functions that migrate data from older versions to newer ones:
+        formatVersion: 3,
+        // functions that migrate data from older versions to newer ones. Each step is typed as
+        // `ScriptConfig` minus the fields added at or after it, so adding a field later means adding it to
+        // the `Omit`s of the earlier steps too (tsc flags any that are missed):
         migrations: {
             // v1 -> v2: added `thumbButtonPosition` (top-left was the only placement before)
             2: (oldData) => (Object.assign(Object.assign({}, oldData), { thumbButtonPosition: "top-left" })),
+            // v2 -> v3: added `signedInCapture` (on, matching 0.11.0+ behaviour)
+            3: (oldData) => (Object.assign(Object.assign({}, oldData), { signedInCapture: true })),
         },
         encodeData: (data) => canCompress ? userutils.compress(data, compressionFormat, "string") : data,
         decodeData: (data) => canCompress ? userutils.decompress(data, compressionFormat, "string") : data,
@@ -2721,6 +2735,11 @@
         </select>
       </label>
 
+      <label class="yfas-check yfas-check--sub">
+        <input type="checkbox" data-field="signedInCapture" />
+        <span data-i18n="settings.signedInCapture"></span>
+      </label>
+
       <label class="yfas-check">
         <input type="checkbox" data-field="includeTimestamps" />
         <span data-i18n-html="settings.timestamps"></span>
@@ -2751,6 +2770,12 @@
         const tsEl = overlay.querySelector("[data-field='includeTimestamps']");
         const autoEl = overlay.querySelector("[data-field='autoSubmit']");
         const thumbPosEl = overlay.querySelector("[data-field='thumbButtonPosition']");
+        const signedInEl = overlay.querySelector("[data-field='signedInCapture']");
+        /** The sign-in option only affects the thumbnail button, so grey it out while that's off. */
+        const syncSignedInEnabled = () => {
+            signedInEl.disabled = thumbPosEl.value === "off";
+        };
+        thumbPosEl.addEventListener("change", syncSignedInEnabled);
         // The raw language setting the user has picked (persisted verbatim: `"auto"` or a locale code) and
         // the concrete locale it currently resolves to (used to render the panel and provider note).
         let selectedLangSetting = data.language;
@@ -2778,6 +2803,8 @@
         tsEl.checked = data.includeTimestamps;
         autoEl.checked = data.autoSubmit;
         thumbPosEl.value = data.thumbButtonPosition;
+        signedInEl.checked = data.signedInCapture;
+        syncSignedInEnabled();
         localize(previewLang);
         // Keep the provider note in sync with the dropdown.
         providerEl.addEventListener("change", () => {
@@ -2805,6 +2832,8 @@
             tsEl.checked = true;
             autoEl.checked = true;
             thumbPosEl.value = getDefaultConfig().thumbButtonPosition;
+            signedInEl.checked = getDefaultConfig().signedInCapture;
+            syncSignedInEnabled();
         });
         overlay.querySelector("[data-action='save']").addEventListener("click", () => {
             void config.setData({
@@ -2816,6 +2845,7 @@
                 includeTimestamps: tsEl.checked,
                 autoSubmit: autoEl.checked,
                 thumbButtonPosition: thumbPosEl.value,
+                signedInCapture: signedInEl.checked,
             });
             // Let live UI (the thumbnail buttons) pick up the new settings without a reload.
             window.dispatchEvent(new Event("yfas-config-changed"));
@@ -2897,7 +2927,27 @@ select.yfas-input {
 .yfas-check input {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
   cursor: pointer;
+}
+/* A setting that belongs to the field right above it: tucked under it and indented. */
+.yfas-check--sub {
+  align-items: flex-start;
+  margin-top: -6px;
+  margin-bottom: 16px;
+  padding-left: 24px;
+  font-size: 1.3rem;
+  line-height: 1.5;
+}
+.yfas-check--sub input {
+  margin-top: 1px;
+}
+.yfas-check:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.yfas-check input:disabled {
+  cursor: default;
 }
 .yfas-actions {
   display: flex;
@@ -2916,9 +2966,9 @@ select.yfas-input {
      * Its corner (or "off") comes from the `thumbButtonPosition` setting.
      *
      * Videos are captured entirely off-page via InnerTube player requests (`remote-subtitles.ts`): the
-     * anonymous ANDROID player for public videos, then the signed-in WEB player for gated ones
-     * (member-only / age-restricted). Only if both fail do we fall back to a new auto-summary tab that
-     * captures with the real player (`auto-summarize.ts`).
+     * anonymous ANDROID player for public videos, then — unless the `signedInCapture` setting is off —
+     * the signed-in WEB player for gated ones (member-only / age-restricted). Only if that fails do we
+     * fall back to a new auto-summary tab that captures with the real player (`auto-summarize.ts`).
      */
     /** Class of the injected overlay button, also used to guard against double-injection. */
     const btnClass = "yfas-thumb-btn";
@@ -3004,9 +3054,10 @@ select.yfas-input {
     }
     /**
      * Summarizes a thumbnail's video. Tries the off-page InnerTube capture first (anonymous ANDROID for
-     * public videos, then the user's sign-in for gated ones). If that throws, the video couldn't be
-     * reached off-page, so we open a new auto-summary tab that captures it with the real player and
-     * closes itself. A `null` from the off-page capture means "genuinely no captions".
+     * public videos, then the user's sign-in for gated ones when `signedInCapture` allows it). If that
+     * throws, the video couldn't be reached off-page, so we open a new auto-summary tab that captures
+     * it with the real player and closes itself. A `null` from the off-page capture means "genuinely no
+     * captions".
      */
     function onThumbClick(btn, videoId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -3016,7 +3067,7 @@ select.yfas-input {
             try {
                 const cfg = config.getData();
                 const preferredLangs = cfg.preferredLangs.split(",").map(s => s.trim()).filter(Boolean);
-                const opts = preferredLangs.length > 0 ? { preferredLangs } : {};
+                const opts = Object.assign(Object.assign({}, (preferredLangs.length > 0 ? { preferredLangs } : {})), { signedIn: cfg.signedInCapture });
                 let result;
                 try {
                     result = yield getSubtitlesForVideo(videoId, opts);

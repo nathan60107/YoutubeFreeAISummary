@@ -22,6 +22,7 @@ export const zhCN: Translations = {
   "settings.thumbPos.bottomLeft": "左下",
   "settings.thumbPos.bottomRight": "右下",
   "settings.thumbPos.off": "关闭",
+  "settings.signedInCapture": "从缩略图总结受限视频时，使用我的 YouTube 登录状态读取字幕（只会发送给 YouTube；关闭后改为打开视频标签页）",
   "settings.timestamps": "字幕包含时间戳（<code>[h:mm:ss]</code>）",
   "settings.autoSubmit": "注入后自动发送",
   "settings.reset": "重置为默认",

@@ -22,6 +22,7 @@ export const ko: Translations = {
   "settings.thumbPos.bottomLeft": "왼쪽 아래",
   "settings.thumbPos.bottomRight": "오른쪽 아래",
   "settings.thumbPos.off": "끄기",
+  "settings.signedInCapture": "썸네일에서 제한된 동영상을 요약할 때 내 YouTube 로그인 상태로 자막 가져오기 (YouTube에만 전송되며, 끄면 동영상을 탭으로 엽니다)",
   "settings.timestamps": "자막에 타임스탬프 포함 (<code>[h:mm:ss]</code>)",
   "settings.autoSubmit": "입력 후 자동 전송",
   "settings.reset": "기본값으로 재설정",

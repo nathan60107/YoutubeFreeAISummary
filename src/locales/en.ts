@@ -31,6 +31,7 @@ export const en = {
   "settings.thumbPos.bottomLeft": "Bottom left",
   "settings.thumbPos.bottomRight": "Bottom right",
   "settings.thumbPos.off": "Off",
+  "settings.signedInCapture": "Use my YouTube sign-in to read restricted videos' subtitles from thumbnails (sent only to YouTube; when off, the video opens in a tab instead)",
   "settings.timestamps": "Include timestamps in subtitles (<code>[h:mm:ss]</code>)",
   "settings.autoSubmit": "Auto-submit after injecting",
   "settings.reset": "Reset to defaults",

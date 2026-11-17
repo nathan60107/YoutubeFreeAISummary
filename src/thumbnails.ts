@@ -4,9 +4,9 @@
  * Its corner (or "off") comes from the `thumbButtonPosition` setting.
  *
  * Videos are captured entirely off-page via InnerTube player requests (`remote-subtitles.ts`): the
- * anonymous ANDROID player for public videos, then the signed-in WEB player for gated ones
- * (member-only / age-restricted). Only if both fail do we fall back to a new auto-summary tab that
- * captures with the real player (`auto-summarize.ts`).
+ * anonymous ANDROID player for public videos, then — unless the `signedInCapture` setting is off —
+ * the signed-in WEB player for gated ones (member-only / age-restricted). Only if that fails do we
+ * fall back to a new auto-summary tab that captures with the real player (`auto-summarize.ts`).
  */
 
 import { openAutoSummaryTab } from "./auto-summarize";
@@ -116,9 +116,10 @@ function setBusy(btn: HTMLElement, busy: boolean): void {
 
 /**
  * Summarizes a thumbnail's video. Tries the off-page InnerTube capture first (anonymous ANDROID for
- * public videos, then the user's sign-in for gated ones). If that throws, the video couldn't be
- * reached off-page, so we open a new auto-summary tab that captures it with the real player and
- * closes itself. A `null` from the off-page capture means "genuinely no captions".
+ * public videos, then the user's sign-in for gated ones when `signedInCapture` allows it). If that
+ * throws, the video couldn't be reached off-page, so we open a new auto-summary tab that captures
+ * it with the real player and closes itself. A `null` from the off-page capture means "genuinely no
+ * captions".
  */
 async function onThumbClick(btn: HTMLElement, videoId: string): Promise<void> {
   if (btn.classList.contains("yfas-busy"))
@@ -127,7 +128,10 @@ async function onThumbClick(btn: HTMLElement, videoId: string): Promise<void> {
   try {
     const cfg = config.getData();
     const preferredLangs = cfg.preferredLangs.split(",").map(s => s.trim()).filter(Boolean);
-    const opts = preferredLangs.length > 0 ? { preferredLangs } : {};
+    const opts = {
+      ...(preferredLangs.length > 0 ? { preferredLangs } : {}),
+      signedIn: cfg.signedInCapture,
+    };
 
     let result;
     try {

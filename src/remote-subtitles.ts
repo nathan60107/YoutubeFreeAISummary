@@ -39,6 +39,15 @@ import {
 } from "./subtitle-core";
 import { warn } from "./log";
 
+/** Options for an off-page capture. */
+export type RemoteCaptureOptions = CaptureOptions & {
+  /**
+   * Whether a video the anonymous player can't reach may be retried with the user's YouTube
+   * sign-in. Defaults to `true`; when `false` such videos throw straight away.
+   */
+  signedIn?: boolean;
+};
+
 /** A subtitle capture plus the title/URL of the (remote) video it came from. */
 export type RemoteSubtitleResult = SubtitleResult & {
   /** The video id these subtitles belong to. */
@@ -61,6 +70,9 @@ const ANDROID_CLIENT = {
   clientVersion: "20.10.38",
   androidSdkVersion: 30,
 } as const;
+
+/** The `playabilityStatus.status` field, when present, tells us why a video is inaccessible. */
+type PlayerResponseWithStatus = YtPlayerResponse & { playabilityStatus?: { status?: string } };
 
 /** Public WEB InnerTube key, used only as a fallback if the page's own key can't be read. */
 const FALLBACK_INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
@@ -90,8 +102,10 @@ function getInnertubeApiKey(): string {
 /**
  * Fetches a fresh player response for `videoId` from the InnerTube `player` endpoint using the
  * ANDROID client, so the caption `baseUrl`s it returns are usable without a PoToken.
+ *
+ * @throws on an HTTP error.
  */
-async function fetchAndroidPlayerResponse(videoId: string): Promise<YtPlayerResponse | null> {
+async function fetchAndroidPlayerResponse(videoId: string): Promise<PlayerResponseWithStatus> {
   const apiKey = getInnertubeApiKey();
   const hl = (navigator.language || "en").split("-")[0];
 
@@ -106,11 +120,9 @@ async function fetchAndroidPlayerResponse(videoId: string): Promise<YtPlayerResp
     body: JSON.stringify({ context: { client: { ...ANDROID_CLIENT, hl } }, videoId }),
   });
 
-  if(!res.ok) {
-    warn(`InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
-    return null;
-  }
-  return await res.json() as YtPlayerResponse;
+  if(!res.ok)
+    throw new Error(`ANDROID InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
+  return await res.json() as PlayerResponseWithStatus;
 }
 
 /** Fallback WEB client version, used only if the page's own (`ytcfg`) can't be read. */
@@ -149,16 +161,18 @@ async function buildSapisidHash(): Promise<string | null> {
 
 /**
  * Fetches a player response for `videoId` as the signed-in user via the WEB client, for gated
- * videos the anonymous ANDROID request can't play. Returns `null` when signed out or on HTTP error.
+ * videos the anonymous ANDROID request can't play.
  *
  * The client context is deliberately minimal: sending the page's full `INNERTUBE_CONTEXT` (namely
  * its `configInfo` experiment blob) makes YouTube return PoToken-gated (`exp=xpe`) caption URLs,
  * whose bodies are empty when fetched directly. Don't "improve" this by passing the full context.
+ *
+ * @throws when signed out (no session cookie to authenticate with) or on an HTTP error.
  */
-async function fetchAuthedWebPlayerResponse(videoId: string): Promise<YtPlayerResponse | null> {
+async function fetchAuthedWebPlayerResponse(videoId: string): Promise<PlayerResponseWithStatus> {
   const authorization = await buildSapisidHash();
   if(!authorization)
-    return null;
+    throw new Error(`Can't fetch ${videoId} as the signed-in user: no YouTube session cookie (signed out?)`);
 
   const hl = (navigator.language || "en").split("-")[0];
   const headers: Record<string, string> = {
@@ -188,11 +202,9 @@ async function fetchAuthedWebPlayerResponse(videoId: string): Promise<YtPlayerRe
     }),
   });
 
-  if(!res.ok) {
-    warn(`Authenticated InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
-    return null;
-  }
-  return await res.json() as YtPlayerResponse;
+  if(!res.ok)
+    throw new Error(`Authenticated InnerTube player request for ${videoId} failed with HTTP ${res.status}`);
+  return await res.json() as PlayerResponseWithStatus;
 }
 
 /** Fetches a caption track's `baseUrl` as `fmt=json3` and parses it into segments. */
@@ -212,23 +224,17 @@ async function fetchTrackSegments(baseUrl: string) {
   return segments.length > 0 ? segments : null;
 }
 
-/** The `playabilityStatus.status` field, when present, tells us why a video is inaccessible. */
-type PlayerResponseWithStatus = YtPlayerResponse & { playabilityStatus?: { status?: string } };
-
 /**
  * Turns a fetched player response into a subtitle result.
  * Returns `null` if the video is playable but has no caption tracks at all.
  *
- * @throws if the response is missing/unplayable or a track exists but its text couldn't be fetched.
+ * @throws if the video is unplayable for this client or a track exists but its text couldn't be fetched.
  */
 async function captureFromPlayerResponse(
   videoId: string,
-  resp: PlayerResponseWithStatus | null,
+  resp: PlayerResponseWithStatus,
   preferredLangs: string[],
 ): Promise<RemoteSubtitleResult | null> {
-  if(!resp)
-    throw new Error(`No player response for ${videoId}`);
-
   const track = pickTrack(getCaptionTracks(resp), preferredLangs);
   if(!track) {
     // No tracks can mean "genuinely no captions" or "this client couldn't play it" (member-only /
@@ -269,7 +275,7 @@ async function captureFromPlayerResponse(
  */
 export async function getSubtitlesForVideo(
   videoId: string,
-  opts: CaptureOptions = {},
+  opts: RemoteCaptureOptions = {},
 ): Promise<RemoteSubtitleResult | null> {
   const preferredLangs = opts.preferredLangs ?? defaultPreferredLangs();
 
@@ -277,8 +283,9 @@ export async function getSubtitlesForVideo(
     return await captureFromPlayerResponse(videoId, await fetchAndroidPlayerResponse(videoId), preferredLangs);
   }
   catch(err) {
-    // TODO: once the thumbnail button gets its own settings (on/off, position), add an option to
-    // skip this signed-in retry and go straight to the auto-summary tab instead (see README roadmap).
+    // The user opted out of signed-in capture: let the caller fall back to the auto-summary tab.
+    if(opts.signedIn === false)
+      throw err;
     warn(`ANDROID off-page capture failed for ${videoId}; retrying with the signed-in WEB player:`, err);
   }
 

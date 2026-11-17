@@ -22,6 +22,7 @@ export const zhTW: Translations = {
   "settings.thumbPos.bottomLeft": "左下",
   "settings.thumbPos.bottomRight": "右下",
   "settings.thumbPos.off": "關閉",
+  "settings.signedInCapture": "從縮圖摘要受限影片時，使用我的 YouTube 登入狀態讀取字幕（只會傳送給 YouTube；關閉後改為開啟影片分頁）",
   "settings.timestamps": "字幕包含時間戳（<code>[h:mm:ss]</code>）",
   "settings.autoSubmit": "注入後自動送出",
   "settings.reset": "重設為預設",

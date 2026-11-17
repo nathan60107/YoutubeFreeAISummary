@@ -22,6 +22,7 @@ export const es: Translations = {
   "settings.thumbPos.bottomLeft": "Abajo a la izquierda",
   "settings.thumbPos.bottomRight": "Abajo a la derecha",
   "settings.thumbPos.off": "Desactivado",
+  "settings.signedInCapture": "Usar mi sesión de YouTube para leer los subtítulos de vídeos restringidos desde las miniaturas (solo se envía a YouTube; si está desactivado, el vídeo se abre en una pestaña)",
   "settings.timestamps": "Incluir marcas de tiempo en los subtítulos (<code>[h:mm:ss]</code>)",
   "settings.autoSubmit": "Enviar automáticamente tras insertar",
   "settings.reset": "Restablecer valores predeterminados",

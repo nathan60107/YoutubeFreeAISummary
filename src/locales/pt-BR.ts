@@ -22,6 +22,7 @@ export const ptBR: Translations = {
   "settings.thumbPos.bottomLeft": "Canto inferior esquerdo",
   "settings.thumbPos.bottomRight": "Canto inferior direito",
   "settings.thumbPos.off": "Desativado",
+  "settings.signedInCapture": "Usar meu login do YouTube para ler as legendas de vídeos restritos a partir das miniaturas (enviado apenas ao YouTube; se desativado, o vídeo é aberto em uma aba)",
   "settings.timestamps": "Incluir marcações de tempo nas legendas (<code>[h:mm:ss]</code>)",
   "settings.autoSubmit": "Enviar automaticamente após inserir",
   "settings.reset": "Restaurar padrões",

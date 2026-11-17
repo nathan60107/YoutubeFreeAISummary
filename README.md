@@ -53,6 +53,7 @@ If the button doesn't show up when you hover a thumbnail, turn off video preview
 
 - **Subtitles go only to the AI you picked** — The script has no server of its own. The captured subtitles are placed into the chat of the AI service you chose, in your own browser, and nowhere else
 - **Your YouTube sign-in is used only with YouTube** — When you summarize a restricted video (members-only, age-restricted) from its thumbnail, the script asks YouTube for the subtitles as you, using the sign-in already in your browser. That request goes to `youtube.com` only; your sign-in is never stored, logged, or sent to the AI service or anyone else
+- **You can turn that off** — Untick "Use my YouTube sign-in…" in the settings and restricted videos are opened in a short-lived tab to read their subtitles instead
 
 ## Roadmap
 
@@ -60,7 +61,6 @@ Planned features and fixes:
 
 - **Stop playback on members-only videos** — Pause playback automatically when a members-only video is opened to capture its subtitles
 - **Skip auto-translated subtitles** — Bypass machine-translated tracks and fetch the untranslated auto-generated transcript or creator-uploaded subtitles/translations instead
-- **Opt out of signed-in subtitle capture** — An option to stop the thumbnail button from using your YouTube sign-in for restricted videos, opening them in a short-lived tab instead
 - **Browser extension version** — A packaged browser extension in addition to the userscript
 
 ## Development

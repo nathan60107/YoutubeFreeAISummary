@@ -16,18 +16,24 @@ export const getDefaultConfig = (): ScriptConfig => ({
   autoSubmit: true,
   preferredLangs: "",
   thumbButtonPosition: "top-left",
+  signedInCapture: true,
 });
 
 export const config = new DataStore({
   id: "script-config",
   defaultData: getDefaultConfig() satisfies ScriptConfig,
   // increment this value if the data format changes:
-  formatVersion: 2,
-  // functions that migrate data from older versions to newer ones:
+  formatVersion: 3,
+  // functions that migrate data from older versions to newer ones. Each step is typed as
+  // `ScriptConfig` minus the fields added at or after it, so adding a field later means adding it to
+  // the `Omit`s of the earlier steps too (tsc flags any that are missed):
   migrations: {
     // v1 -> v2: added `thumbButtonPosition` (top-left was the only placement before)
-    2: (oldData: Omit<ScriptConfig, "thumbButtonPosition">): ScriptConfig =>
+    2: (oldData: Omit<ScriptConfig, "thumbButtonPosition" | "signedInCapture">): Omit<ScriptConfig, "signedInCapture"> =>
       ({ ...oldData, thumbButtonPosition: "top-left" }),
+    // v2 -> v3: added `signedInCapture` (on, matching 0.11.0+ behaviour)
+    3: (oldData: Omit<ScriptConfig, "signedInCapture">): ScriptConfig =>
+      ({ ...oldData, signedInCapture: true }),
   },
   encodeData: (data) => canCompress ? compress(data, compressionFormat, "string") : data,
   decodeData: (data) => canCompress ? decompress(data, compressionFormat, "string") : data,

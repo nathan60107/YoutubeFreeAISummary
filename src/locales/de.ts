@@ -22,6 +22,7 @@ export const de: Translations = {
   "settings.thumbPos.bottomLeft": "Unten links",
   "settings.thumbPos.bottomRight": "Unten rechts",
   "settings.thumbPos.off": "Aus",
+  "settings.signedInCapture": "Meine YouTube-Anmeldung verwenden, um Untertitel eingeschränkter Videos über Vorschaubilder zu lesen (wird nur an YouTube gesendet; wenn aus, wird das Video stattdessen in einem Tab geöffnet)",
   "settings.timestamps": "Zeitstempel in Untertiteln einschließen (<code>[h:mm:ss]</code>)",
   "settings.autoSubmit": "Nach dem Einfügen automatisch absenden",
   "settings.reset": "Auf Standard zurücksetzen",

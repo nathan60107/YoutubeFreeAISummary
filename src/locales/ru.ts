@@ -22,6 +22,7 @@ export const ru: Translations = {
   "settings.thumbPos.bottomLeft": "Слева снизу",
   "settings.thumbPos.bottomRight": "Справа снизу",
   "settings.thumbPos.off": "Выключено",
+  "settings.signedInCapture": "Использовать мой вход в YouTube, чтобы получать субтитры видео с ограниченным доступом из миниатюр (отправляется только в YouTube; если выключено, видео откроется во вкладке)",
   "settings.timestamps": "Включать тайм-коды в субтитры (<code>[h:mm:ss]</code>)",
   "settings.autoSubmit": "Автоматически отправлять после вставки",
   "settings.reset": "Сбросить к настройкам по умолчанию",

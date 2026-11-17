@@ -42,6 +42,12 @@ export type ScriptConfig = {
   preferredLangs: string;
   /** Which corner of a video thumbnail the hover summarize button sits in, or `"off"` to hide it. */
   thumbButtonPosition: ThumbButtonPosition;
+  /**
+   * Whether the thumbnail button may fetch a restricted (member-only / age-restricted) video's
+   * subtitles with the user's YouTube sign-in, instead of opening the video in a tab. The sign-in
+   * is only ever used for a request to YouTube itself. See `remote-subtitles.ts`.
+   */
+  signedInCapture: boolean;
 };
 
 /** Placement of the thumbnail overlay button (`thumbnails.ts`). `"off"` disables the button. */

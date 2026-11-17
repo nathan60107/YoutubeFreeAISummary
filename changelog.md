@@ -1,3 +1,6 @@
+# 0.13.0
+- Add a setting to stop the thumbnail button from using your YouTube sign-in for member-only and age-restricted videos; when it's off, those videos are opened in a short-lived tab to read their subtitles instead, as before 0.11.0
+
 # 0.12.0
 - Choose where the thumbnail summarize button sits — any of the four corners — or turn it off, in the settings; the settings also point you to YouTube's video-preview-on-hover option, which hides the button while it's on
 - Keep the thumbnail button inside the image: on the home feed, search and related lists it could sit partly outside the thumbnail's edge

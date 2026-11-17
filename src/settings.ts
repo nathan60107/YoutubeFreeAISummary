@@ -68,6 +68,11 @@ export function openSettings(): void {
         </select>
       </label>
 
+      <label class="yfas-check yfas-check--sub">
+        <input type="checkbox" data-field="signedInCapture" />
+        <span data-i18n="settings.signedInCapture"></span>
+      </label>
+
       <label class="yfas-check">
         <input type="checkbox" data-field="includeTimestamps" />
         <span data-i18n-html="settings.timestamps"></span>
@@ -100,6 +105,13 @@ export function openSettings(): void {
   const tsEl = overlay.querySelector<HTMLInputElement>("[data-field='includeTimestamps']")!;
   const autoEl = overlay.querySelector<HTMLInputElement>("[data-field='autoSubmit']")!;
   const thumbPosEl = overlay.querySelector<HTMLSelectElement>("[data-field='thumbButtonPosition']")!;
+  const signedInEl = overlay.querySelector<HTMLInputElement>("[data-field='signedInCapture']")!;
+
+  /** The sign-in option only affects the thumbnail button, so grey it out while that's off. */
+  const syncSignedInEnabled = () => {
+    signedInEl.disabled = thumbPosEl.value === "off";
+  };
+  thumbPosEl.addEventListener("change", syncSignedInEnabled);
 
   // The raw language setting the user has picked (persisted verbatim: `"auto"` or a locale code) and
   // the concrete locale it currently resolves to (used to render the panel and provider note).
@@ -133,6 +145,8 @@ export function openSettings(): void {
   tsEl.checked = data.includeTimestamps;
   autoEl.checked = data.autoSubmit;
   thumbPosEl.value = data.thumbButtonPosition;
+  signedInEl.checked = data.signedInCapture;
+  syncSignedInEnabled();
   localize(previewLang);
 
   // Keep the provider note in sync with the dropdown.
@@ -164,6 +178,8 @@ export function openSettings(): void {
     tsEl.checked = true;
     autoEl.checked = true;
     thumbPosEl.value = getDefaultConfig().thumbButtonPosition;
+    signedInEl.checked = getDefaultConfig().signedInCapture;
+    syncSignedInEnabled();
   });
 
   overlay.querySelector("[data-action='save']")!.addEventListener("click", () => {
@@ -176,6 +192,7 @@ export function openSettings(): void {
       includeTimestamps: tsEl.checked,
       autoSubmit: autoEl.checked,
       thumbButtonPosition: thumbPosEl.value as ThumbButtonPosition,
+      signedInCapture: signedInEl.checked,
     });
     // Let live UI (the thumbnail buttons) pick up the new settings without a reload.
     window.dispatchEvent(new Event("yfas-config-changed"));
@@ -259,7 +276,27 @@ select.yfas-input {
 .yfas-check input {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
   cursor: pointer;
+}
+/* A setting that belongs to the field right above it: tucked under it and indented. */
+.yfas-check--sub {
+  align-items: flex-start;
+  margin-top: -6px;
+  margin-bottom: 16px;
+  padding-left: 24px;
+  font-size: 1.3rem;
+  line-height: 1.5;
+}
+.yfas-check--sub input {
+  margin-top: 1px;
+}
+.yfas-check:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.yfas-check input:disabled {
+  cursor: default;
 }
 .yfas-actions {
   display: flex;
