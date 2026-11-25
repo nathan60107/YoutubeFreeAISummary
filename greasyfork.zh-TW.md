@@ -41,6 +41,6 @@
 
 ## 原始碼與支援
 
-- 原始碼：https://github.com/nathan60107/YoutubeFreeAISummary
-- 問題回報與功能建議：https://github.com/nathan60107/YoutubeFreeAISummary/issues
+- 原始碼：[github.com/nathan60107/YoutubeFreeAISummary](https://github.com/nathan60107/YoutubeFreeAISummary)
+- 問題回報與功能建議：[github.com/nathan60107/YoutubeFreeAISummary/issues](https://github.com/nathan60107/YoutubeFreeAISummary/issues)
 - 授權：MIT

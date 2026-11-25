@@ -51,7 +51,7 @@ export const fr: Translations = {
   "error.noCaptions": "Aucun sous-titre ni traduction n’a été trouvé pour cette vidéo, elle ne peut donc pas être résumée. Assurez-vous que la vidéo a des sous-titres, puis actualisez et réessayez.",
   "error.noInput": "Impossible de trouver le champ de saisie sur %1 — la page n’a peut-être pas fini de charger, ou sa mise en page a changé. Veuillez actualiser et réessayer.",
 
-  "provider.aistudio.note": "Meilleure qualité : aucune limite de longueur et accès gratuit aux modèles Pro ; temps de réflexion plus long, mais résultats très précis. Idéal pour les longs sous-titres.",
+  "provider.aistudio.note": "Meilleure qualité : aucune limite de longueur, Gemini 4 Hydrogen gratuit ; réflexion plus longue, mais très précis. Idéal pour les longs sous-titres.",
   "provider.gemini.note": "Bons résultats, mais le champ de saisie a une limite de longueur ; les longs sous-titres risquent de ne pas être collés en entier.",
   "provider.chatgpt.note": "Modèle gratuit plus faible ; il peut ne pas répondre du tout quand les sous-titres sont trop longs. Idéal pour les vidéos courtes.",
   "provider.claude.note": "Temps de réflexion plus long ; les résultats présentent parfois de petits défauts.",

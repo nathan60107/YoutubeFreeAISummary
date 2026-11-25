@@ -51,7 +51,7 @@ export const es: Translations = {
   "error.noCaptions": "No se encontraron subtítulos ni traducciones para este vídeo, así que no se puede resumir. Asegúrate de que el vídeo tenga subtítulos, actualiza la página e inténtalo de nuevo.",
   "error.noInput": "No se encontró el cuadro de texto en %1. Puede que la página no haya terminado de cargar o que su diseño haya cambiado. Actualiza la página e inténtalo de nuevo.",
 
-  "provider.aistudio.note": "La mejor calidad: sin límite de longitud y acceso gratuito a modelos Pro; el tiempo de razonamiento es más largo, pero los resultados son muy precisos. Ideal para subtítulos largos.",
+  "provider.aistudio.note": "La mejor calidad: sin límite de longitud y Gemini 4 Hydrogen gratis; razona más tiempo, pero es muy preciso. Ideal para subtítulos largos.",
   "provider.gemini.note": "Buenos resultados, pero el cuadro de texto tiene un límite de longitud; los subtítulos largos podrían no pegarse por completo.",
   "provider.chatgpt.note": "El modelo gratuito es más débil; puede no responder cuando los subtítulos son demasiado largos. Mejor para vídeos cortos.",
   "provider.claude.note": "Tiempo de razonamiento más largo; los resultados a veces tienen pequeños defectos.",

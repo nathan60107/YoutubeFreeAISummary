@@ -65,7 +65,7 @@ export const en = {
   "error.noInput": "Couldn't find the input box on %1 — the page may not have finished loading, or its layout changed. Please refresh and try again.",
 
   // Per-provider quality/limitation notes (shown in settings when selected)
-  "provider.aistudio.note": "Best quality: no length limit and free access to Pro models; longer thinking time, but very accurate results. Great for long subtitles.",
+  "provider.aistudio.note": "Best quality: no length limit, Gemini 4 Hydrogen for free; longer thinking time, but very accurate. Great for long subtitles.",
   "provider.gemini.note": "Good results, but the input box has a length limit; longer subtitles may not paste in full.",
   "provider.chatgpt.note": "Weaker free model; may not respond at all when the subtitles are too long. Best for shorter videos.",
   "provider.claude.note": "Longer thinking time; results occasionally have minor flaws.",

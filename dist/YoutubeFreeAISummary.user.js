@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.13.0
+// @version           0.13.1
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=65e5f40
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=10f310e
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -47,7 +47,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=65e5f40
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=10f310e
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -88,7 +88,7 @@
 
     const modeRaw = "production";
     const hostRaw = "github";
-    const buildNumberRaw = "65e5f40";
+    const buildNumberRaw = "10f310e";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -186,7 +186,7 @@
         "error.noCaptions": "No subtitles/translations were found for this video, so it can't be summarized. Make sure the video has captions, then refresh and try again.",
         "error.noInput": "Couldn't find the input box on %1 — the page may not have finished loading, or its layout changed. Please refresh and try again.",
         // Per-provider quality/limitation notes (shown in settings when selected)
-        "provider.aistudio.note": "Best quality: no length limit and free access to Pro models; longer thinking time, but very accurate results. Great for long subtitles.",
+        "provider.aistudio.note": "Best quality: no length limit, Gemini 4 Hydrogen for free; longer thinking time, but very accurate. Great for long subtitles.",
         "provider.gemini.note": "Good results, but the input box has a length limit; longer subtitles may not paste in full.",
         "provider.chatgpt.note": "Weaker free model; may not respond at all when the subtitles are too long. Best for shorter videos.",
         "provider.claude.note": "Longer thinking time; results occasionally have minor flaws.",
@@ -252,7 +252,7 @@
         "notice.title": "找不到字幕",
         "error.noCaptions": "找不到這部影片的字幕／翻譯，無法摘要。請確認影片有字幕，重新整理頁面後再試一次。",
         "error.noInput": "在 %1 找不到輸入框，可能是頁面尚未載入完成或版面改版。請重新整理頁面後再試一次。",
-        "provider.aistudio.note": "品質最佳：不限字數、可免費使用 Pro 模型；思考時間較長，但結果非常準確。適合長字幕。",
+        "provider.aistudio.note": "品質最佳：不限字數、免費用 Gemini 4 Hydrogen；思考較久，但結果非常準確。適合長字幕。",
         "provider.gemini.note": "結果品質良好，但輸入框有長度限制，較長的字幕可能無法完整貼入。",
         "provider.chatgpt.note": "免費模型品質較弱；字幕過長時可能直接不回應。適合較短的影片。",
         "provider.claude.note": "思考時間較長，結果偶有瑕疵。",
@@ -315,7 +315,7 @@
         "notice.title": "找不到字幕",
         "error.noCaptions": "找不到这部视频的字幕／翻译，无法摘要。请确认视频有字幕，刷新页面后再试一次。",
         "error.noInput": "在 %1 找不到输入框，可能是页面尚未加载完成或版面改版。请刷新页面后再试一次。",
-        "provider.aistudio.note": "品质最佳：不限字数、可免费使用 Pro 模型；思考时间较长，但结果非常准确。适合长字幕。",
+        "provider.aistudio.note": "品质最佳：不限字数、免费用 Gemini 4 Hydrogen；思考较久，但结果非常准确。适合长字幕。",
         "provider.gemini.note": "结果品质良好，但输入框有长度限制，较长的字幕可能无法完整粘贴。",
         "provider.chatgpt.note": "免费模型品质较弱；字幕过长时可能直接不回应。适合较短的视频。",
         "provider.claude.note": "思考时间较长，结果偶有瑕疵。",
@@ -378,7 +378,7 @@
         "notice.title": "字幕が見つかりません",
         "error.noCaptions": "この動画の字幕／翻訳が見つからないため、要約できません。動画に字幕があることを確認し、ページを再読み込みしてからもう一度お試しください。",
         "error.noInput": "%1 で入力欄が見つかりませんでした。ページの読み込みが完了していないか、レイアウトが変更された可能性があります。ページを再読み込みしてもう一度お試しください。",
-        "provider.aistudio.note": "最高品質：文字数制限なし、Pro モデルを無料で利用可能。思考時間は長めですが、結果は非常に正確です。長い字幕に最適。",
+        "provider.aistudio.note": "最高品質：文字数制限なし、Gemini 4 Hydrogen を無料で利用可能。思考は長めですが非常に正確。長い字幕に最適。",
         "provider.gemini.note": "結果の品質は良好ですが、入力欄に文字数制限があり、長い字幕は全文を貼り付けられない場合があります。",
         "provider.chatgpt.note": "無料モデルは品質がやや低く、字幕が長すぎると応答しないことがあります。短い動画に最適。",
         "provider.claude.note": "思考時間が長めで、結果にまれに不備があります。",
@@ -441,7 +441,7 @@
         "notice.title": "자막을 찾을 수 없습니다",
         "error.noCaptions": "이 동영상의 자막/번역을 찾을 수 없어 요약할 수 없습니다. 동영상에 자막이 있는지 확인한 뒤 새로고침하고 다시 시도해 주세요.",
         "error.noInput": "%1에서 입력창을 찾지 못했습니다. 페이지 로딩이 끝나지 않았거나 레이아웃이 바뀌었을 수 있습니다. 새로고침한 후 다시 시도해 주세요.",
-        "provider.aistudio.note": "최고 품질: 글자 수 제한 없이 Pro 모델을 무료로 사용할 수 있습니다. 사고 시간은 길지만 결과가 매우 정확합니다. 긴 자막에 적합합니다.",
+        "provider.aistudio.note": "최고 품질: 글자 수 제한 없음, Gemini 4 Hydrogen 무료 사용. 사고 시간은 길지만 매우 정확합니다. 긴 자막에 적합합니다.",
         "provider.gemini.note": "결과 품질은 좋지만 입력창에 길이 제한이 있어 긴 자막은 전체가 붙여넣어지지 않을 수 있습니다.",
         "provider.chatgpt.note": "무료 모델은 품질이 약한 편이며 자막이 너무 길면 아예 응답하지 않을 수 있습니다. 짧은 동영상에 적합합니다.",
         "provider.claude.note": "사고 시간이 길고 결과에 가끔 사소한 결함이 있습니다.",
@@ -504,7 +504,7 @@
         "notice.title": "No se encontraron subtítulos",
         "error.noCaptions": "No se encontraron subtítulos ni traducciones para este vídeo, así que no se puede resumir. Asegúrate de que el vídeo tenga subtítulos, actualiza la página e inténtalo de nuevo.",
         "error.noInput": "No se encontró el cuadro de texto en %1. Puede que la página no haya terminado de cargar o que su diseño haya cambiado. Actualiza la página e inténtalo de nuevo.",
-        "provider.aistudio.note": "La mejor calidad: sin límite de longitud y acceso gratuito a modelos Pro; el tiempo de razonamiento es más largo, pero los resultados son muy precisos. Ideal para subtítulos largos.",
+        "provider.aistudio.note": "La mejor calidad: sin límite de longitud y Gemini 4 Hydrogen gratis; razona más tiempo, pero es muy preciso. Ideal para subtítulos largos.",
         "provider.gemini.note": "Buenos resultados, pero el cuadro de texto tiene un límite de longitud; los subtítulos largos podrían no pegarse por completo.",
         "provider.chatgpt.note": "El modelo gratuito es más débil; puede no responder cuando los subtítulos son demasiado largos. Mejor para vídeos cortos.",
         "provider.claude.note": "Tiempo de razonamiento más largo; los resultados a veces tienen pequeños defectos.",
@@ -567,7 +567,7 @@
         "notice.title": "Aucun sous-titre trouvé",
         "error.noCaptions": "Aucun sous-titre ni traduction n’a été trouvé pour cette vidéo, elle ne peut donc pas être résumée. Assurez-vous que la vidéo a des sous-titres, puis actualisez et réessayez.",
         "error.noInput": "Impossible de trouver le champ de saisie sur %1 — la page n’a peut-être pas fini de charger, ou sa mise en page a changé. Veuillez actualiser et réessayer.",
-        "provider.aistudio.note": "Meilleure qualité : aucune limite de longueur et accès gratuit aux modèles Pro ; temps de réflexion plus long, mais résultats très précis. Idéal pour les longs sous-titres.",
+        "provider.aistudio.note": "Meilleure qualité : aucune limite de longueur, Gemini 4 Hydrogen gratuit ; réflexion plus longue, mais très précis. Idéal pour les longs sous-titres.",
         "provider.gemini.note": "Bons résultats, mais le champ de saisie a une limite de longueur ; les longs sous-titres risquent de ne pas être collés en entier.",
         "provider.chatgpt.note": "Modèle gratuit plus faible ; il peut ne pas répondre du tout quand les sous-titres sont trop longs. Idéal pour les vidéos courtes.",
         "provider.claude.note": "Temps de réflexion plus long ; les résultats présentent parfois de petits défauts.",
@@ -630,7 +630,7 @@
         "notice.title": "Keine Untertitel gefunden",
         "error.noCaptions": "Für dieses Video wurden keine Untertitel/Übersetzungen gefunden, daher kann es nicht zusammengefasst werden. Stelle sicher, dass das Video Untertitel hat, lade die Seite neu und versuche es erneut.",
         "error.noInput": "Das Eingabefeld auf %1 wurde nicht gefunden – die Seite ist möglicherweise noch nicht fertig geladen oder ihr Layout hat sich geändert. Bitte lade die Seite neu und versuche es erneut.",
-        "provider.aistudio.note": "Beste Qualität: keine Längenbegrenzung und kostenloser Zugriff auf Pro-Modelle; längere Denkzeit, aber sehr genaue Ergebnisse. Ideal für lange Untertitel.",
+        "provider.aistudio.note": "Beste Qualität: keine Längenbegrenzung, Gemini 4 Hydrogen kostenlos; längere Denkzeit, aber sehr genau. Ideal für lange Untertitel.",
         "provider.gemini.note": "Gute Ergebnisse, aber das Eingabefeld hat eine Längenbegrenzung; längere Untertitel lassen sich womöglich nicht vollständig einfügen.",
         "provider.chatgpt.note": "Schwächeres kostenloses Modell; antwortet bei zu langen Untertiteln möglicherweise gar nicht. Am besten für kürzere Videos.",
         "provider.claude.note": "Längere Denkzeit; die Ergebnisse haben gelegentlich kleine Mängel.",
@@ -693,7 +693,7 @@
         "notice.title": "Nenhuma legenda encontrada",
         "error.noCaptions": "Não foram encontradas legendas/traduções para este vídeo, então não é possível resumi-lo. Verifique se o vídeo tem legendas, atualize a página e tente novamente.",
         "error.noInput": "Não foi possível encontrar o campo de entrada em %1 — a página pode não ter terminado de carregar, ou seu layout mudou. Atualize a página e tente novamente.",
-        "provider.aistudio.note": "Melhor qualidade: sem limite de tamanho e acesso gratuito a modelos Pro; tempo de raciocínio maior, mas resultados muito precisos. Ótimo para legendas longas.",
+        "provider.aistudio.note": "Melhor qualidade: sem limite de tamanho e Gemini 4 Hydrogen grátis; raciocina por mais tempo, mas é muito preciso. Ótimo para legendas longas.",
         "provider.gemini.note": "Bons resultados, mas o campo de entrada tem limite de tamanho; legendas longas podem não ser coladas por completo.",
         "provider.chatgpt.note": "Modelo gratuito mais fraco; pode não responder quando as legendas são muito longas. Melhor para vídeos curtos.",
         "provider.claude.note": "Tempo de raciocínio maior; os resultados ocasionalmente têm pequenas falhas.",
@@ -756,7 +756,7 @@
         "notice.title": "Субтитры не найдены",
         "error.noCaptions": "Для этого видео не найдены субтитры или перевод, поэтому его нельзя резюмировать. Убедитесь, что у видео есть субтитры, обновите страницу и попробуйте снова.",
         "error.noInput": "Не удалось найти поле ввода на %1 — возможно, страница не догрузилась или её вёрстка изменилась. Обновите страницу и попробуйте снова.",
-        "provider.aistudio.note": "Лучшее качество: без ограничения длины и бесплатный доступ к моделям Pro; время обдумывания дольше, но результаты очень точные. Отлично подходит для длинных субтитров.",
+        "provider.aistudio.note": "Лучшее качество: без ограничения длины, Gemini 4 Hydrogen бесплатно; думает дольше, но очень точно. Отлично подходит для длинных субтитров.",
         "provider.gemini.note": "Хорошие результаты, но у поля ввода есть ограничение длины; длинные субтитры могут вставиться не полностью.",
         "provider.chatgpt.note": "Бесплатная модель слабее; при слишком длинных субтитрах может вообще не ответить. Лучше для коротких видео.",
         "provider.claude.note": "Время обдумывания дольше; в результатах изредка встречаются мелкие недочёты.",

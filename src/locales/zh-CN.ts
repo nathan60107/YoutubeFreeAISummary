@@ -51,7 +51,7 @@ export const zhCN: Translations = {
   "error.noCaptions": "找不到这部视频的字幕／翻译，无法摘要。请确认视频有字幕，刷新页面后再试一次。",
   "error.noInput": "在 %1 找不到输入框，可能是页面尚未加载完成或版面改版。请刷新页面后再试一次。",
 
-  "provider.aistudio.note": "品质最佳：不限字数、可免费使用 Pro 模型；思考时间较长，但结果非常准确。适合长字幕。",
+  "provider.aistudio.note": "品质最佳：不限字数、免费用 Gemini 4 Hydrogen；思考较久，但结果非常准确。适合长字幕。",
   "provider.gemini.note": "结果品质良好，但输入框有长度限制，较长的字幕可能无法完整粘贴。",
   "provider.chatgpt.note": "免费模型品质较弱；字幕过长时可能直接不回应。适合较短的视频。",
   "provider.claude.note": "思考时间较长，结果偶有瑕疵。",

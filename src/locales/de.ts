@@ -51,7 +51,7 @@ export const de: Translations = {
   "error.noCaptions": "Für dieses Video wurden keine Untertitel/Übersetzungen gefunden, daher kann es nicht zusammengefasst werden. Stelle sicher, dass das Video Untertitel hat, lade die Seite neu und versuche es erneut.",
   "error.noInput": "Das Eingabefeld auf %1 wurde nicht gefunden – die Seite ist möglicherweise noch nicht fertig geladen oder ihr Layout hat sich geändert. Bitte lade die Seite neu und versuche es erneut.",
 
-  "provider.aistudio.note": "Beste Qualität: keine Längenbegrenzung und kostenloser Zugriff auf Pro-Modelle; längere Denkzeit, aber sehr genaue Ergebnisse. Ideal für lange Untertitel.",
+  "provider.aistudio.note": "Beste Qualität: keine Längenbegrenzung, Gemini 4 Hydrogen kostenlos; längere Denkzeit, aber sehr genau. Ideal für lange Untertitel.",
   "provider.gemini.note": "Gute Ergebnisse, aber das Eingabefeld hat eine Längenbegrenzung; längere Untertitel lassen sich womöglich nicht vollständig einfügen.",
   "provider.chatgpt.note": "Schwächeres kostenloses Modell; antwortet bei zu langen Untertiteln möglicherweise gar nicht. Am besten für kürzere Videos.",
   "provider.claude.note": "Längere Denkzeit; die Ergebnisse haben gelegentlich kleine Mängel.",

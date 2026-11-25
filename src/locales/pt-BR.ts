@@ -51,7 +51,7 @@ export const ptBR: Translations = {
   "error.noCaptions": "Não foram encontradas legendas/traduções para este vídeo, então não é possível resumi-lo. Verifique se o vídeo tem legendas, atualize a página e tente novamente.",
   "error.noInput": "Não foi possível encontrar o campo de entrada em %1 — a página pode não ter terminado de carregar, ou seu layout mudou. Atualize a página e tente novamente.",
 
-  "provider.aistudio.note": "Melhor qualidade: sem limite de tamanho e acesso gratuito a modelos Pro; tempo de raciocínio maior, mas resultados muito precisos. Ótimo para legendas longas.",
+  "provider.aistudio.note": "Melhor qualidade: sem limite de tamanho e Gemini 4 Hydrogen grátis; raciocina por mais tempo, mas é muito preciso. Ótimo para legendas longas.",
   "provider.gemini.note": "Bons resultados, mas o campo de entrada tem limite de tamanho; legendas longas podem não ser coladas por completo.",
   "provider.chatgpt.note": "Modelo gratuito mais fraco; pode não responder quando as legendas são muito longas. Melhor para vídeos curtos.",
   "provider.claude.note": "Tempo de raciocínio maior; os resultados ocasionalmente têm pequenas falhas.",

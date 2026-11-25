@@ -41,6 +41,6 @@ If the button doesn't show up when you hover a thumbnail, turn off video preview
 
 ## Source & support
 
-- Source code: https://github.com/nathan60107/YoutubeFreeAISummary
-- Bug reports & feature requests: https://github.com/nathan60107/YoutubeFreeAISummary/issues
+- Source code: [github.com/nathan60107/YoutubeFreeAISummary](https://github.com/nathan60107/YoutubeFreeAISummary)
+- Bug reports & feature requests: [github.com/nathan60107/YoutubeFreeAISummary/issues](https://github.com/nathan60107/YoutubeFreeAISummary/issues)
 - License: MIT

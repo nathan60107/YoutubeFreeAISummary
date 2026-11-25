@@ -51,7 +51,7 @@ export const zhTW: Translations = {
   "error.noCaptions": "找不到這部影片的字幕／翻譯，無法摘要。請確認影片有字幕，重新整理頁面後再試一次。",
   "error.noInput": "在 %1 找不到輸入框，可能是頁面尚未載入完成或版面改版。請重新整理頁面後再試一次。",
 
-  "provider.aistudio.note": "品質最佳：不限字數、可免費使用 Pro 模型；思考時間較長，但結果非常準確。適合長字幕。",
+  "provider.aistudio.note": "品質最佳：不限字數、免費用 Gemini 4 Hydrogen；思考較久，但結果非常準確。適合長字幕。",
   "provider.gemini.note": "結果品質良好，但輸入框有長度限制，較長的字幕可能無法完整貼入。",
   "provider.chatgpt.note": "免費模型品質較弱；字幕過長時可能直接不回應。適合較短的影片。",
   "provider.claude.note": "思考時間較長，結果偶有瑕疵。",

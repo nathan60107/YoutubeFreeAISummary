@@ -1,3 +1,6 @@
+# 0.13.1
+- Update the Google AI Studio note in the settings: Pro models are no longer free there, so it now names Gemini 4 Hydrogen as the free model
+
 # 0.13.0
 - Add a setting to stop the thumbnail button from using your YouTube sign-in for member-only and age-restricted videos; when it's off, those videos are opened in a short-lived tab to read their subtitles instead, as before 0.11.0
 
