@@ -10,7 +10,7 @@
 // @name:pt-BR         Resumo de YouTube com IA grátis
 // @name:ru            Бесплатное AI-резюме YouTube
 // @namespace         https://github.com/nathan60107/YoutubeFreeAISummary
-// @version           0.13.1
+// @version           0.14.0
 // @description       Capture a YouTube video's on-page subtitles and send them straight to your chosen AI (AI Studio, Gemini, ChatGPT, Claude, or Grok) for a free summary
 // @description:zh-TW  擷取 YouTube 影片頁面上的字幕，直接送到你選擇的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免費摘要
 // @description:zh-CN  抓取 YouTube 视频页面上的字幕，直接发送到你选择的 AI（AI Studio、Gemini、ChatGPT、Claude 或 Grok）做免费摘要
@@ -26,7 +26,7 @@
 // @license           MIT
 // @author            nathan60107
 // @copyright         nathan60107 (https://github.com/nathan60107)
-// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=10f310e
+// @icon              https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=a57ea6f
 // @match             *://*.youtube.com/*
 // @match             *://aistudio.google.com/*
 // @match             *://gemini.google.com/*
@@ -45,7 +45,7 @@
 // @grant             GM.openInTab
 // @grant             unsafeWindow
 // @noframes
-// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=10f310e
+// @resource          img-icon https://raw.githubusercontent.com/nathan60107/YoutubeFreeAISummary/main/assets/icon.svg?b=a57ea6f
 // @require           https://cdn.jsdelivr.net/npm/@sv443-network/userutils@6.3.0/dist/index.global.js
 // ==/UserScript==
 
@@ -86,7 +86,7 @@
 
     const modeRaw = "production";
     const hostRaw = "greasyfork";
-    const buildNumberRaw = "10f310e";
+    const buildNumberRaw = "a57ea6f";
     /** The mode in which the script was built (production or development) */
     const mode = (modeRaw.match(/^#{{.+}}$/) ? "production" : modeRaw);
     /** Path to the GitHub repo in the format "User/Repo" */
@@ -1457,22 +1457,80 @@
         return (_e = (_b = (_a = track.name) === null || _a === void 0 ? void 0 : _a.simpleText) !== null && _b !== void 0 ? _b : (_d = (_c = track.name) === null || _c === void 0 ? void 0 : _c.runs) === null || _d === void 0 ? void 0 : _d.map(r => r.text).join("")) !== null && _e !== void 0 ? _e : track.languageCode;
     }
     /**
-     * Picks the best track for the user: first a manually-created track in a preferred language,
-     * then an auto-generated one in a preferred language, then any manual track, then anything.
+     * Resolves a BCP-47 tag to its base language and likely script via CLDR likely-subtags
+     * (`Intl.Locale#maximize`), e.g. `zh-TW` → `zh`/`Hant`, `yue` → `zh`/`Hant`, `sr` → `sr`/`Cyrl`.
+     * Cantonese (`yue`) is folded into `zh` so it can serve as a Chinese fallback and vice versa.
+     * Tags `Intl.Locale` rejects (e.g. legacy `zh-yue`) fall back to the primary subtag with no script.
      */
-    function pickTrack(tracks, preferredLangs) {
-        var _a, _b, _c;
-        if (tracks.length === 0)
-            return undefined;
-        const matchesLang = (t) => preferredLangs.some(l => t.languageCode.toLowerCase().startsWith(l.toLowerCase()));
-        const isManual = (t) => t.kind !== "asr";
-        return (_c = (_b = (_a = tracks.find(t => matchesLang(t) && isManual(t))) !== null && _a !== void 0 ? _a : tracks.find(t => matchesLang(t))) !== null && _b !== void 0 ? _b : tracks.find(isManual)) !== null && _c !== void 0 ? _c : tracks[0];
+    function resolveLang(tag) {
+        let lang;
+        let script;
+        try {
+            const loc = new Intl.Locale(tag).maximize();
+            lang = loc.language;
+            script = loc.script;
+        }
+        catch (_a) {
+            lang = tag.split("-")[0].toLowerCase();
+        }
+        return { lang: lang === "yue" ? "zh" : lang, script };
     }
-    /** Returns the browser UI language plus English as default preferred languages. */
-    function defaultPreferredLangs() {
-        var _a;
-        const langs = [navigator.language, ...((_a = navigator.languages) !== null && _a !== void 0 ? _a : [])].filter(Boolean);
-        return [...new Set([...langs, "en"])];
+    /**
+     * How closely `trackLang` matches a preferred language `prefLang`:
+     *  - `1`: exact/prefix match, or same language written in the same script
+     *    (e.g. `zh-TW` ↔ `zh-Hant` / `yue-HK`, `en-US` ↔ `en-GB`).
+     *  - `2`: same language, different script (e.g. `zh-TW` ↔ `zh-CN` / `zh`).
+     *  - `null`: different language.
+     */
+    function langMatchTier(trackLang, prefLang) {
+        const t = trackLang.toLowerCase();
+        const p = prefLang.toLowerCase();
+        if (t === p || t.startsWith(`${p}-`))
+            return 1;
+        const tr = resolveLang(t);
+        const pr = resolveLang(p);
+        if (tr.lang !== pr.lang)
+            return null;
+        return tr.script && tr.script === pr.script ? 1 : 2;
+    }
+    /**
+     * Picks a caption track from a player response.
+     *
+     * `captionTracks` only ever holds three kinds of track — machine translations aren't listed; they
+     * are produced on request by adding `tlang` to any track's URL — ranked here as:
+     *  1. manual: uploaded by the creator (including their own translations into other languages);
+     *  2. ASR of the original audio;
+     *  3. ASR of a dubbed audio track (AI or human dub), usually much worse than the original's.
+     *
+     * ASR tracks share `kind: "asr"`, so 2 and 3 are told apart by language: the original audio's
+     * language is that of `defaultTranslationSourceTrackIndices`. Without that field (single-audio
+     * videos) every ASR track counts as original.
+     *
+     * With `preferredLangs`, each language is tried in order — closest match tier first (see
+     * `langMatchTier`), then best rank within it; otherwise the best-ranked track overall wins.
+     * Ties go to the earlier track in the list.
+     */
+    function pickTrack(resp, preferredLangs = []) {
+        var _a, _b, _c;
+        const renderer = (_a = resp === null || resp === void 0 ? void 0 : resp.captions) === null || _a === void 0 ? void 0 : _a.playerCaptionsTracklistRenderer;
+        const tracks = (_b = renderer === null || renderer === void 0 ? void 0 : renderer.captionTracks) !== null && _b !== void 0 ? _b : [];
+        const originalLangs = new Set(((_c = renderer === null || renderer === void 0 ? void 0 : renderer.defaultTranslationSourceTrackIndices) !== null && _c !== void 0 ? _c : [])
+            .map(i => { var _a; return (_a = tracks[i]) === null || _a === void 0 ? void 0 : _a.languageCode; })
+            .filter(Boolean));
+        const rank = (t) => {
+            if (t.kind !== "asr")
+                return 1;
+            return originalLangs.size === 0 || originalLangs.has(t.languageCode) ? 2 : 3;
+        };
+        const best = (candidates) => candidates.reduce((acc, t) => (!acc || rank(t) < rank(acc) ? t : acc), undefined);
+        for (const pref of preferredLangs) {
+            for (const tier of [1, 2]) {
+                const hit = best(tracks.filter(t => langMatchTier(t.languageCode, pref) === tier));
+                if (hit)
+                    return hit;
+            }
+        }
+        return best(tracks);
     }
     //#endregion
     //#region json3 parsing / formatting
@@ -1572,7 +1630,7 @@
     function fetchAndroidPlayerResponse(videoId) {
         return __awaiter(this, void 0, void 0, function* () {
             const apiKey = getInnertubeApiKey();
-            const hl = (navigator.language || "en").split("-")[0];
+            const hl = navigator.language || "en";
             const res = yield fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}&prettyPrint=false`, {
                 method: "POST",
                 credentials: "include",
@@ -1635,7 +1693,7 @@
             const authorization = yield buildSapisidHash();
             if (!authorization)
                 throw new Error(`Can't fetch ${videoId} as the signed-in user: no YouTube session cookie (signed out?)`);
-            const hl = (navigator.language || "en").split("-")[0];
+            const hl = navigator.language || "en";
             const headers = {
                 "Content-Type": "application/json",
                 "Authorization": authorization,
@@ -1667,9 +1725,9 @@
         });
     }
     /** Fetches a caption track's `baseUrl` as `fmt=json3` and parses it into segments. */
-    function fetchTrackSegments(baseUrl) {
+    function fetchTrackSegments(track) {
         return __awaiter(this, void 0, void 0, function* () {
-            const url = new URL(baseUrl, "https://www.youtube.com");
+            const url = new URL(track.baseUrl, "https://www.youtube.com");
             url.searchParams.set("fmt", "json3");
             const res = yield fetch(url.toString(), { credentials: "include" });
             if (!res.ok)
@@ -1690,7 +1748,7 @@
     function captureFromPlayerResponse(videoId, resp, preferredLangs) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b, _c, _d, _e;
-            const track = pickTrack(getCaptionTracks(resp), preferredLangs);
+            const track = pickTrack(resp, preferredLangs);
             if (!track) {
                 // No tracks can mean "genuinely no captions" or "this client couldn't play it" (member-only /
                 // age-restricted / private): distinguish so the caller can try another way in.
@@ -1701,7 +1759,7 @@
             }
             if (!track.baseUrl)
                 throw new Error(`Caption track for ${videoId} has no baseUrl to fetch`);
-            const segments = yield fetchTrackSegments(track.baseUrl);
+            const segments = yield fetchTrackSegments(track);
             if (!segments)
                 throw new Error(`Found a caption track for ${videoId} but its timedtext body was empty`);
             return {
@@ -1727,10 +1785,8 @@
      */
     function getSubtitlesForVideo(videoId_1) {
         return __awaiter(this, arguments, void 0, function* (videoId, opts = {}) {
-            var _a;
-            const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
             try {
-                return yield captureFromPlayerResponse(videoId, yield fetchAndroidPlayerResponse(videoId), preferredLangs);
+                return yield captureFromPlayerResponse(videoId, yield fetchAndroidPlayerResponse(videoId), opts.preferredLangs);
             }
             catch (err) {
                 // The user opted out of signed-in capture: let the caller fall back to the auto-summary tab.
@@ -1738,7 +1794,7 @@
                     throw err;
                 warn(`ANDROID off-page capture failed for ${videoId}; retrying with the signed-in WEB player:`, err);
             }
-            return yield captureFromPlayerResponse(videoId, yield fetchAuthedWebPlayerResponse(videoId), preferredLangs);
+            return yield captureFromPlayerResponse(videoId, yield fetchAuthedWebPlayerResponse(videoId), opts.preferredLangs);
         });
     }
 
@@ -2361,21 +2417,16 @@
             return null;
         });
     }
-    /**
-     * Strategy: trigger the player to fetch captions, grab the (PoToken-bearing, authenticated) URL
-     * it requested via the interceptor, then refetch it as json3 ourselves. Works for member-only and
-     * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
-     */
-    function fetchViaInterceptedUrl(videoId) {
+    /** Whether a timedtext request URL targets the same underlying caption track as `track` (without auto-translation). */
+    function matchesTrack(url, track) {
+        var _a, _b;
+        return !url.searchParams.has("tlang")
+            && url.searchParams.get("lang") === track.languageCode
+            && ((_a = url.searchParams.get("kind")) !== null && _a !== void 0 ? _a : "") === ((_b = track.kind) !== null && _b !== void 0 ? _b : "");
+    }
+    /** Fetches a timedtext URL as `fmt=json3` and parses it into segments. */
+    function fetchJson3Segments(url) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Reuse an already-captured, fetchable URL (e.g. the user already had captions on); otherwise
-            // drive the player into issuing one.
-            let captured = peekTimedtextUrl(videoId);
-            if (!isFetchable(captured))
-                captured = yield captureFetchableTimedtext(videoId);
-            if (!captured)
-                return null;
-            const url = new URL(captured, location.origin);
             url.searchParams.set("fmt", "json3");
             const res = yield fetch(url.toString(), { credentials: "include" });
             if (!res.ok)
@@ -2385,6 +2436,56 @@
                 return null;
             const segments = parseJson3(JSON.parse(body));
             return segments.length > 0 ? segments : null;
+        });
+    }
+    /**
+     * Strategy: trigger the player to fetch captions, grab the (PoToken-bearing, authenticated) URL
+     * it requested via the interceptor, then refetch it as json3 ourselves. Works for member-only and
+     * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
+     *
+     * On the watch page (`preferPickedTrack = false`), we fetch the exact URL the player requested so
+     * whatever subtitle the user currently has selected is used as-is. In a thumbnail-triggered
+     * auto-summary tab (`preferPickedTrack = true`), we graft the intercepted PoToken onto `track.baseUrl`
+     * so the track chosen by `pickTrack` is fetched instead.
+     */
+    function fetchViaInterceptedUrl(track_1, tracks_1, videoId_1) {
+        return __awaiter(this, arguments, void 0, function* (track, tracks, videoId, preferPickedTrack = false) {
+            var _a, _b;
+            // Reuse an already-captured, fetchable URL (e.g. the user already had captions on); otherwise
+            // drive the player into issuing one.
+            let captured = peekTimedtextUrl(videoId);
+            if (!isFetchable(captured))
+                captured = yield captureFetchableTimedtext(videoId);
+            if (!captured)
+                return null;
+            const capturedUrl = new URL(captured, location.origin);
+            if (preferPickedTrack && !matchesTrack(capturedUrl, track) && track.baseUrl) {
+                const preferredUrl = new URL(track.baseUrl, location.origin);
+                for (const param of ["pot", "c", "cver"]) {
+                    const val = capturedUrl.searchParams.get(param);
+                    if (val)
+                        preferredUrl.searchParams.set(param, val);
+                }
+                const preferredSegments = yield fetchJson3Segments(preferredUrl);
+                if (preferredSegments)
+                    return { lang: track.languageCode, trackName: trackName(track), segments: preferredSegments };
+            }
+            // The picked track is never a translation (those aren't in `captionTracks`), so drop any
+            // auto-translation the player had on rather than summarizing a machine translation.
+            if (preferPickedTrack)
+                capturedUrl.searchParams.delete("tlang");
+            const segments = yield fetchJson3Segments(capturedUrl);
+            if (!segments)
+                return null;
+            const tlang = capturedUrl.searchParams.get("tlang");
+            const lang = capturedUrl.searchParams.get("lang");
+            const kind = (_a = capturedUrl.searchParams.get("kind")) !== null && _a !== void 0 ? _a : "";
+            const actualTrack = (_b = tracks.find(t => { var _a; return t.languageCode === lang && ((_a = t.kind) !== null && _a !== void 0 ? _a : "") === kind; })) !== null && _b !== void 0 ? _b : track;
+            return {
+                lang: tlang !== null && tlang !== void 0 ? tlang : actualTrack.languageCode,
+                trackName: tlang ? `${trackName(actualTrack)} → ${tlang}` : trackName(actualTrack),
+                segments,
+            };
         });
     }
     //#endregion
@@ -2456,28 +2557,27 @@
      */
     function getCurrentSubtitles() {
         return __awaiter(this, arguments, void 0, function* (opts = {}) {
-            var _a, _b, _c;
-            const preferredLangs = (_a = opts.preferredLangs) !== null && _a !== void 0 ? _a : defaultPreferredLangs();
+            var _a, _b;
             const resp = getPlayerResponse();
             const tracks = getCaptionTracks(resp);
-            const track = pickTrack(tracks, preferredLangs);
+            const track = pickTrack(resp, opts.preferredLangs);
             // Strategy 1: intercept the player's own timedtext request (carries a valid PoToken and the
             // user's session, so it works on member-only / exp=xpe videos).
             if (track) {
-                let segments = null;
+                let hit = null;
                 try {
-                    segments = yield fetchViaInterceptedUrl((_b = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _b === void 0 ? void 0 : _b.videoId);
+                    hit = yield fetchViaInterceptedUrl(track, tracks, (_a = resp === null || resp === void 0 ? void 0 : resp.videoDetails) === null || _a === void 0 ? void 0 : _a.videoId, opts.preferPickedTrack);
                 }
                 catch (err) {
                     warn("intercepted-timedtext fetch failed:", err);
                 }
-                if (segments && segments.length > 0) {
+                if (hit) {
                     return {
-                        lang: track.languageCode,
-                        trackName: trackName(track),
-                        segments,
-                        text: segments.map(s => s.text).join("\n"),
-                        timedText: toTimedText(segments),
+                        lang: hit.lang,
+                        trackName: hit.trackName,
+                        segments: hit.segments,
+                        text: hit.segments.map(s => s.text).join("\n"),
+                        timedText: toTimedText(hit.segments),
                         source: "intercept-timedtext",
                     };
                 }
@@ -2487,7 +2587,7 @@
             const panelSegments = scrapeTranscriptPanel();
             if (panelSegments.length > 0) {
                 return {
-                    lang: (_c = track === null || track === void 0 ? void 0 : track.languageCode) !== null && _c !== void 0 ? _c : "unknown",
+                    lang: (_b = track === null || track === void 0 ? void 0 : track.languageCode) !== null && _b !== void 0 ? _b : "unknown",
                     trackName: track ? trackName(track) : "Transcript",
                     segments: panelSegments,
                     text: panelSegments.map(s => s.text).join("\n"),
@@ -2547,10 +2647,10 @@
      * @throws if capture itself fails (the caller is expected to report the error).
      */
     function captureAndHandoff() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return __awaiter(this, arguments, void 0, function* (preferPickedTrack = false) {
             const cfg = config.getData();
             const preferredLangs = cfg.preferredLangs.split(",").map(s => s.trim()).filter(Boolean);
-            const result = yield getCurrentSubtitles(preferredLangs.length > 0 ? { preferredLangs } : {});
+            const result = yield getCurrentSubtitles(Object.assign(Object.assign({}, (preferredLangs.length > 0 ? { preferredLangs } : {})), { preferPickedTrack }));
             if (!result) {
                 // No captions is an expected outcome, not a failure: notify without counting it toward the
                 // repeated-failure escalation (which would wrongly prompt the user to file an issue).
@@ -2619,7 +2719,7 @@
             let handedOff = false;
             try {
                 yield waitForSelector("#movie_player", 20000);
-                handedOff = yield captureAndHandoff();
+                handedOff = yield captureAndHandoff(true);
             }
             catch (err) {
                 error("Auto-summary capture failed:", err);

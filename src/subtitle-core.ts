@@ -37,6 +37,12 @@ export type YtPlayerResponse = {
   captions?: {
     playerCaptionsTracklistRenderer?: {
       captionTracks?: YtCaptionTrack[];
+      /**
+       * Indices into `captionTracks` of the track(s) YouTube treats as the video's original-language
+       * source. On videos with dubbed audio tracks (AI or human) each dub gets its own ASR caption
+       * track, and this is how the one transcribed from the original audio is told apart.
+       */
+      defaultTranslationSourceTrackIndices?: number[];
     };
   };
   videoDetails?: {
@@ -46,7 +52,7 @@ export type YtPlayerResponse = {
   };
 };
 
-type YtCaptionTrack = {
+export type YtCaptionTrack = {
   /** e.g. { simpleText: "English" } */
   name?: { simpleText?: string; runs?: { text: string }[] };
   languageCode: string;
@@ -70,10 +76,15 @@ export type Json3Response = {
 /** Options for picking which caption track to capture. */
 export type CaptureOptions = {
   /**
-   * Ordered list of preferred language codes (prefix match, e.g. "zh" matches "zh-Hant").
-   * Defaults to the browser UI language followed by English.
+   * Ordered list of preferred language codes (e.g. "zh-TW", "ja", "en").
+   * When omitted or empty, tracks are picked by kind alone (see `pickTrack`).
    */
   preferredLangs?: string[];
+  /**
+   * When `true` (used by the thumbnail-triggered auto-summary tab), fetch the track chosen by
+   * `pickTrack` rather than whichever track the watch-page player happens to have active.
+   */
+  preferPickedTrack?: boolean;
 };
 
 //#endregion
@@ -92,27 +103,90 @@ export function trackName(track: YtCaptionTrack): string {
 }
 
 /**
- * Picks the best track for the user: first a manually-created track in a preferred language,
- * then an auto-generated one in a preferred language, then any manual track, then anything.
+ * Resolves a BCP-47 tag to its base language and likely script via CLDR likely-subtags
+ * (`Intl.Locale#maximize`), e.g. `zh-TW` → `zh`/`Hant`, `yue` → `zh`/`Hant`, `sr` → `sr`/`Cyrl`.
+ * Cantonese (`yue`) is folded into `zh` so it can serve as a Chinese fallback and vice versa.
+ * Tags `Intl.Locale` rejects (e.g. legacy `zh-yue`) fall back to the primary subtag with no script.
  */
-export function pickTrack(tracks: YtCaptionTrack[], preferredLangs: string[]): YtCaptionTrack | undefined {
-  if(tracks.length === 0)
-    return undefined;
-
-  const matchesLang = (t: YtCaptionTrack) =>
-    preferredLangs.some(l => t.languageCode.toLowerCase().startsWith(l.toLowerCase()));
-  const isManual = (t: YtCaptionTrack) => t.kind !== "asr";
-
-  return tracks.find(t => matchesLang(t) && isManual(t))
-    ?? tracks.find(t => matchesLang(t))
-    ?? tracks.find(isManual)
-    ?? tracks[0];
+function resolveLang(tag: string): { lang: string; script?: string } {
+  let lang: string;
+  let script: string | undefined;
+  try {
+    const loc = new Intl.Locale(tag).maximize();
+    lang = loc.language;
+    script = loc.script;
+  }
+  catch {
+    lang = tag.split("-")[0].toLowerCase();
+  }
+  return { lang: lang === "yue" ? "zh" : lang, script };
 }
 
-/** Returns the browser UI language plus English as default preferred languages. */
-export function defaultPreferredLangs(): string[] {
-  const langs = [navigator.language, ...(navigator.languages ?? [])].filter(Boolean);
-  return [...new Set([...langs, "en"])];
+/**
+ * How closely `trackLang` matches a preferred language `prefLang`:
+ *  - `1`: exact/prefix match, or same language written in the same script
+ *    (e.g. `zh-TW` ↔ `zh-Hant` / `yue-HK`, `en-US` ↔ `en-GB`).
+ *  - `2`: same language, different script (e.g. `zh-TW` ↔ `zh-CN` / `zh`).
+ *  - `null`: different language.
+ */
+function langMatchTier(trackLang: string, prefLang: string): 1 | 2 | null {
+  const t = trackLang.toLowerCase();
+  const p = prefLang.toLowerCase();
+  if(t === p || t.startsWith(`${p}-`))
+    return 1;
+  const tr = resolveLang(t);
+  const pr = resolveLang(p);
+  if(tr.lang !== pr.lang)
+    return null;
+  return tr.script && tr.script === pr.script ? 1 : 2;
+}
+
+/**
+ * Picks a caption track from a player response.
+ *
+ * `captionTracks` only ever holds three kinds of track — machine translations aren't listed; they
+ * are produced on request by adding `tlang` to any track's URL — ranked here as:
+ *  1. manual: uploaded by the creator (including their own translations into other languages);
+ *  2. ASR of the original audio;
+ *  3. ASR of a dubbed audio track (AI or human dub), usually much worse than the original's.
+ *
+ * ASR tracks share `kind: "asr"`, so 2 and 3 are told apart by language: the original audio's
+ * language is that of `defaultTranslationSourceTrackIndices`. Without that field (single-audio
+ * videos) every ASR track counts as original.
+ *
+ * With `preferredLangs`, each language is tried in order — closest match tier first (see
+ * `langMatchTier`), then best rank within it; otherwise the best-ranked track overall wins.
+ * Ties go to the earlier track in the list.
+ */
+export function pickTrack(
+  resp: YtPlayerResponse | undefined,
+  preferredLangs: string[] = [],
+): YtCaptionTrack | undefined {
+  const renderer = resp?.captions?.playerCaptionsTracklistRenderer;
+  const tracks = renderer?.captionTracks ?? [];
+
+  const originalLangs = new Set(
+    (renderer?.defaultTranslationSourceTrackIndices ?? [])
+      .map(i => tracks[i]?.languageCode)
+      .filter(Boolean),
+  );
+  const rank = (t: YtCaptionTrack) => {
+    if(t.kind !== "asr")
+      return 1;
+    return originalLangs.size === 0 || originalLangs.has(t.languageCode) ? 2 : 3;
+  };
+  const best = (candidates: YtCaptionTrack[]) =>
+    candidates.reduce<YtCaptionTrack | undefined>((acc, t) => (!acc || rank(t) < rank(acc) ? t : acc), undefined);
+
+  for(const pref of preferredLangs) {
+    for(const tier of [1, 2] as const) {
+      const hit = best(tracks.filter(t => langMatchTier(t.languageCode, pref) === tier));
+      if(hit)
+        return hit;
+    }
+  }
+
+  return best(tracks);
 }
 
 //#endregion

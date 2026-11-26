@@ -26,8 +26,6 @@
  */
 
 import {
-  defaultPreferredLangs,
-  getCaptionTracks,
   parseJson3,
   pickTrack,
   toTimedText,
@@ -35,6 +33,7 @@ import {
   type CaptureOptions,
   type Json3Response,
   type SubtitleResult,
+  type YtCaptionTrack,
   type YtPlayerResponse,
 } from "./subtitle-core";
 import { warn } from "./log";
@@ -107,7 +106,7 @@ function getInnertubeApiKey(): string {
  */
 async function fetchAndroidPlayerResponse(videoId: string): Promise<PlayerResponseWithStatus> {
   const apiKey = getInnertubeApiKey();
-  const hl = (navigator.language || "en").split("-")[0];
+  const hl = navigator.language || "en";
 
   const res = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}&prettyPrint=false`, {
     method: "POST",
@@ -174,7 +173,7 @@ async function fetchAuthedWebPlayerResponse(videoId: string): Promise<PlayerResp
   if(!authorization)
     throw new Error(`Can't fetch ${videoId} as the signed-in user: no YouTube session cookie (signed out?)`);
 
-  const hl = (navigator.language || "en").split("-")[0];
+  const hl = navigator.language || "en";
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "Authorization": authorization,
@@ -208,8 +207,8 @@ async function fetchAuthedWebPlayerResponse(videoId: string): Promise<PlayerResp
 }
 
 /** Fetches a caption track's `baseUrl` as `fmt=json3` and parses it into segments. */
-async function fetchTrackSegments(baseUrl: string) {
-  const url = new URL(baseUrl, "https://www.youtube.com");
+async function fetchTrackSegments(track: YtCaptionTrack) {
+  const url = new URL(track.baseUrl!, "https://www.youtube.com");
   url.searchParams.set("fmt", "json3");
 
   const res = await fetch(url.toString(), { credentials: "include" });
@@ -233,9 +232,9 @@ async function fetchTrackSegments(baseUrl: string) {
 async function captureFromPlayerResponse(
   videoId: string,
   resp: PlayerResponseWithStatus,
-  preferredLangs: string[],
+  preferredLangs?: string[],
 ): Promise<RemoteSubtitleResult | null> {
-  const track = pickTrack(getCaptionTracks(resp), preferredLangs);
+  const track = pickTrack(resp, preferredLangs);
   if(!track) {
     // No tracks can mean "genuinely no captions" or "this client couldn't play it" (member-only /
     // age-restricted / private): distinguish so the caller can try another way in.
@@ -248,7 +247,7 @@ async function captureFromPlayerResponse(
   if(!track.baseUrl)
     throw new Error(`Caption track for ${videoId} has no baseUrl to fetch`);
 
-  const segments = await fetchTrackSegments(track.baseUrl);
+  const segments = await fetchTrackSegments(track);
   if(!segments)
     throw new Error(`Found a caption track for ${videoId} but its timedtext body was empty`);
 
@@ -277,10 +276,8 @@ export async function getSubtitlesForVideo(
   videoId: string,
   opts: RemoteCaptureOptions = {},
 ): Promise<RemoteSubtitleResult | null> {
-  const preferredLangs = opts.preferredLangs ?? defaultPreferredLangs();
-
   try {
-    return await captureFromPlayerResponse(videoId, await fetchAndroidPlayerResponse(videoId), preferredLangs);
+    return await captureFromPlayerResponse(videoId, await fetchAndroidPlayerResponse(videoId), opts.preferredLangs);
   }
   catch(err) {
     // The user opted out of signed-in capture: let the caller fall back to the auto-summary tab.
@@ -289,5 +286,5 @@ export async function getSubtitlesForVideo(
     warn(`ANDROID off-page capture failed for ${videoId}; retrying with the signed-in WEB player:`, err);
   }
 
-  return await captureFromPlayerResponse(videoId, await fetchAuthedWebPlayerResponse(videoId), preferredLangs);
+  return await captureFromPlayerResponse(videoId, await fetchAuthedWebPlayerResponse(videoId), opts.preferredLangs);
 }

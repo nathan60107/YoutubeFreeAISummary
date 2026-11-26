@@ -53,11 +53,14 @@ function getChannelName(): string {
  *   notified of that expected condition, but it is not counted as a failure).
  * @throws if capture itself fails (the caller is expected to report the error).
  */
-export async function captureAndHandoff(): Promise<boolean> {
+export async function captureAndHandoff(preferPickedTrack = false): Promise<boolean> {
   const cfg = config.getData();
   const preferredLangs = cfg.preferredLangs.split(",").map(s => s.trim()).filter(Boolean);
 
-  const result = await getCurrentSubtitles(preferredLangs.length > 0 ? { preferredLangs } : {});
+  const result = await getCurrentSubtitles({
+    ...(preferredLangs.length > 0 ? { preferredLangs } : {}),
+    preferPickedTrack,
+  });
   if(!result) {
     // No captions is an expected outcome, not a failure: notify without counting it toward the
     // repeated-failure escalation (which would wrongly prompt the user to file an issue).

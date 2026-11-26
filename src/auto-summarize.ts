@@ -57,7 +57,7 @@ export async function runAutoSummary(): Promise<void> {
   let handedOff = false;
   try {
     await waitForSelector("#movie_player", 20_000);
-    handedOff = await captureAndHandoff();
+    handedOff = await captureAndHandoff(true);
   }
   catch(err) {
     error("Auto-summary capture failed:", err);

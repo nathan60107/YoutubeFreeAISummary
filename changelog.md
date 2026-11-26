@@ -1,3 +1,8 @@
+# 0.14.0
+- Pick subtitles more sensibly: creator-uploaded tracks are preferred over auto-generated ones, Traditional and Simplified Chinese (including Cantonese) are told apart, and with no preferred languages set the script now takes the video's best track instead of guessing from the browser language; on auto-dubbed videos that's the original-language track, not one transcribed from a dub
+- Honor the preferred subtitle languages in the tab that opens for videos the thumbnail button can't read directly, instead of taking whichever track the player happened to turn on
+- Report the language and track name of the subtitles that were actually captured, which could previously be mislabeled when the player showed a different track than the one picked
+
 # 0.13.1
 - Update the Google AI Studio note in the settings: Pro models are no longer free there, so it now names Gemini 4 Hydrogen as the free model
 

@@ -16,7 +16,6 @@
 
 import { peekTimedtextUrl } from "./intercept";
 import {
-  defaultPreferredLangs,
   getCaptionTracks,
   parseJson3,
   pickTrack,
@@ -26,6 +25,7 @@ import {
   type Json3Response,
   type SubtitleResult,
   type SubtitleSegment,
+  type YtCaptionTrack,
   type YtPlayerResponse,
 } from "./subtitle-core";
 import { warn } from "./log";
@@ -120,21 +120,15 @@ async function captureFetchableTimedtext(videoId?: string, timeoutMs = 15000): P
   return null;
 }
 
-/**
- * Strategy: trigger the player to fetch captions, grab the (PoToken-bearing, authenticated) URL
- * it requested via the interceptor, then refetch it as json3 ourselves. Works for member-only and
- * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
- */
-async function fetchViaInterceptedUrl(videoId?: string): Promise<SubtitleSegment[] | null> {
-  // Reuse an already-captured, fetchable URL (e.g. the user already had captions on); otherwise
-  // drive the player into issuing one.
-  let captured = peekTimedtextUrl(videoId);
-  if(!isFetchable(captured))
-    captured = await captureFetchableTimedtext(videoId);
-  if(!captured)
-    return null;
+/** Whether a timedtext request URL targets the same underlying caption track as `track` (without auto-translation). */
+function matchesTrack(url: URL, track: YtCaptionTrack): boolean {
+  return !url.searchParams.has("tlang")
+    && url.searchParams.get("lang") === track.languageCode
+    && (url.searchParams.get("kind") ?? "") === (track.kind ?? "");
+}
 
-  const url = new URL(captured, location.origin);
+/** Fetches a timedtext URL as `fmt=json3` and parses it into segments. */
+async function fetchJson3Segments(url: URL): Promise<SubtitleSegment[] | null> {
   url.searchParams.set("fmt", "json3");
 
   const res = await fetch(url.toString(), { credentials: "include" });
@@ -147,6 +141,64 @@ async function fetchViaInterceptedUrl(videoId?: string): Promise<SubtitleSegment
 
   const segments = parseJson3(JSON.parse(body) as Json3Response);
   return segments.length > 0 ? segments : null;
+}
+
+/**
+ * Strategy: trigger the player to fetch captions, grab the (PoToken-bearing, authenticated) URL
+ * it requested via the interceptor, then refetch it as json3 ourselves. Works for member-only and
+ * `exp=xpe` videos. Returns `null` if no request was captured or it produced no segments.
+ *
+ * On the watch page (`preferPickedTrack = false`), we fetch the exact URL the player requested so
+ * whatever subtitle the user currently has selected is used as-is. In a thumbnail-triggered
+ * auto-summary tab (`preferPickedTrack = true`), we graft the intercepted PoToken onto `track.baseUrl`
+ * so the track chosen by `pickTrack` is fetched instead.
+ */
+async function fetchViaInterceptedUrl(
+  track: YtCaptionTrack,
+  tracks: YtCaptionTrack[],
+  videoId?: string,
+  preferPickedTrack = false,
+): Promise<{ lang: string; trackName: string; segments: SubtitleSegment[] } | null> {
+  // Reuse an already-captured, fetchable URL (e.g. the user already had captions on); otherwise
+  // drive the player into issuing one.
+  let captured = peekTimedtextUrl(videoId);
+  if(!isFetchable(captured))
+    captured = await captureFetchableTimedtext(videoId);
+  if(!captured)
+    return null;
+
+  const capturedUrl = new URL(captured, location.origin);
+
+  if(preferPickedTrack && !matchesTrack(capturedUrl, track) && track.baseUrl) {
+    const preferredUrl = new URL(track.baseUrl, location.origin);
+    for(const param of ["pot", "c", "cver"]) {
+      const val = capturedUrl.searchParams.get(param);
+      if(val)
+        preferredUrl.searchParams.set(param, val);
+    }
+    const preferredSegments = await fetchJson3Segments(preferredUrl);
+    if(preferredSegments)
+      return { lang: track.languageCode, trackName: trackName(track), segments: preferredSegments };
+  }
+
+  // The picked track is never a translation (those aren't in `captionTracks`), so drop any
+  // auto-translation the player had on rather than summarizing a machine translation.
+  if(preferPickedTrack)
+    capturedUrl.searchParams.delete("tlang");
+
+  const segments = await fetchJson3Segments(capturedUrl);
+  if(!segments)
+    return null;
+
+  const tlang = capturedUrl.searchParams.get("tlang");
+  const lang = capturedUrl.searchParams.get("lang");
+  const kind = capturedUrl.searchParams.get("kind") ?? "";
+  const actualTrack = tracks.find(t => t.languageCode === lang && (t.kind ?? "") === kind) ?? track;
+  return {
+    lang: tlang ?? actualTrack.languageCode,
+    trackName: tlang ? `${trackName(actualTrack)} → ${tlang}` : trackName(actualTrack),
+    segments,
+  };
 }
 
 //#endregion
@@ -225,30 +277,28 @@ export function hasCaptionsAvailable(): boolean {
  * @throws if a track was found but every strategy failed to produce text.
  */
 export async function getCurrentSubtitles(opts: CaptureOptions = {}): Promise<SubtitleResult | null> {
-  const preferredLangs = opts.preferredLangs ?? defaultPreferredLangs();
-
   const resp = getPlayerResponse();
   const tracks = getCaptionTracks(resp);
-  const track = pickTrack(tracks, preferredLangs);
+  const track = pickTrack(resp, opts.preferredLangs);
 
   // Strategy 1: intercept the player's own timedtext request (carries a valid PoToken and the
   // user's session, so it works on member-only / exp=xpe videos).
   if(track) {
-    let segments: SubtitleSegment[] | null = null;
+    let hit: { lang: string; trackName: string; segments: SubtitleSegment[] } | null = null;
     try {
-      segments = await fetchViaInterceptedUrl(resp?.videoDetails?.videoId);
+      hit = await fetchViaInterceptedUrl(track, tracks, resp?.videoDetails?.videoId, opts.preferPickedTrack);
     }
     catch(err) {
       warn("intercepted-timedtext fetch failed:", err);
     }
 
-    if(segments && segments.length > 0) {
+    if(hit) {
       return {
-        lang: track.languageCode,
-        trackName: trackName(track),
-        segments,
-        text: segments.map(s => s.text).join("\n"),
-        timedText: toTimedText(segments),
+        lang: hit.lang,
+        trackName: hit.trackName,
+        segments: hit.segments,
+        text: hit.segments.map(s => s.text).join("\n"),
+        timedText: toTimedText(hit.segments),
         source: "intercept-timedtext",
       };
     }

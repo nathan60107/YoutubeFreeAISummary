@@ -59,7 +59,6 @@ If the button doesn't show up when you hover a thumbnail, turn off video preview
 
 Planned features and fixes:
 
-- **Skip auto-translated subtitles** — Bypass machine-translated tracks and fetch the untranslated auto-generated transcript or creator-uploaded subtitles/translations instead
 - **Browser extension version** — A packaged browser extension in addition to the userscript
 
 ## Development
